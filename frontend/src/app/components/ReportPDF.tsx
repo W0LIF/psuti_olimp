@@ -1,80 +1,35 @@
 // frontend/src/app/components/ReportPDF.tsx
-
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
-import { Transaction } from './Dashboard'; // Импортируем ваш тип транзакций
 
-// --- Регистрация шрифта для корректного отображения кириллицы ---
-// ВАЖНО: Скачайте файл шрифта (например, 'fonts/NotoSans-Regular.ttf') и положите в папку public или src.
-// Проще всего скачать Noto Sans отсюда: https://fonts.google.com/noto/specimen/Noto+Sans
-// или использовать любой другой TTF-шрифт с поддержкой кириллицы.
-// Укажите правильный путь до файла шрифта!
+// Интерфейс должен совпадать с тем, что передаётся из ReportsPage
+interface Transaction {
+  id: number;
+  amount: number;
+  type: 'income' | 'expense';
+  date: string;
+  comment?: string;
+  category: string;
+}
+
+// Регистрация шрифта с поддержкой кириллицы (файл должен лежать в public/fonts/)
 Font.register({
   family: 'NotoSans',
-  src: '/fonts/NotoSans-Regular.ttf', // Убедитесь, что путь верный
+  src: '/fonts/NotoSans-Regular.ttf',
 });
 
-// Определяем стили для PDF-документа
 const styles = StyleSheet.create({
-  page: {
-    padding: 35,
-    fontFamily: 'NotoSans', // Применяем зарегистрированный шрифт ко всему документу
-    fontSize: 10,
-  },
-  title: {
-    fontSize: 20,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  subtitle: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 30,
-    color: '#666',
-  },
-  sectionTitle: {
-    fontSize: 14,
-    marginVertical: 10,
-    fontWeight: 'bold',
-  },
-  summaryContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  summaryCard: {
-    width: '30%',
-    padding: 10,
-    backgroundColor: '#f5f5f5',
-    borderRadius: 5,
-    textAlign: 'center',
-  },
-  summaryLabel: {
-    fontSize: 10,
-    marginBottom: 5,
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  table: {
-    display: 'flex',
-    width: 'auto',
-    marginTop: 10,
-    marginBottom: 20,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    borderBottomStyle: 'solid',
-    alignItems: 'center',
-  },
-  tableHeader: {
-    backgroundColor: '#f3f4f6',
-    fontWeight: 'bold',
-  },
+  page: { padding: 35, fontFamily: 'NotoSans', fontSize: 10 },
+  title: { fontSize: 20, textAlign: 'center', marginBottom: 20 },
+  subtitle: { fontSize: 12, textAlign: 'center', marginBottom: 30, color: '#666' },
+  sectionTitle: { fontSize: 14, marginVertical: 10, fontWeight: 'bold' },
+  summaryContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
+  summaryCard: { width: '30%', padding: 10, backgroundColor: '#f5f5f5', borderRadius: 5, textAlign: 'center' },
+  summaryLabel: { fontSize: 10, marginBottom: 5 },
+  summaryValue: { fontSize: 14, fontWeight: 'bold' },
+  table: { width: 'auto', marginTop: 10, marginBottom: 20 },
+  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#e5e7eb', alignItems: 'center' },
+  tableHeader: { backgroundColor: '#f3f4f6', fontWeight: 'bold' },
   tableColDate: { width: '15%', padding: 5 },
   tableColCategory: { width: '20%', padding: 5 },
   tableColAmount: { width: '20%', padding: 5, textAlign: 'right' },
@@ -92,62 +47,44 @@ interface ReportPDFProps {
   expensesByCategory: [string, number][];
 }
 
-export const ReportPDF = ({
-  transactions,
-  monthName,
-  year,
-  totalIncome,
-  totalExpenses,
-  balance,
-  expensesByCategory,
-}: ReportPDFProps) => (
+export const ReportPDF = (props: ReportPDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      {/* Заголовок */}
-      <Text style={styles.title}>Финансовый отчет</Text>
-      <Text style={styles.subtitle}>
-        {monthName} {year}
-      </Text>
+      <Text style={styles.title}>Финансовый отчёт</Text>
+      <Text style={styles.subtitle}>{props.monthName} {props.year}</Text>
 
-      {/* Сводка */}
       <Text style={styles.sectionTitle}>Сводка</Text>
       <View style={styles.summaryContainer}>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Доходы</Text>
-          <Text style={[styles.summaryValue, { color: 'green' }]}>
-            +{totalIncome.toLocaleString()} ₽
-          </Text>
+          <Text style={[styles.summaryValue, { color: 'green' }]}>+{props.totalIncome.toLocaleString()} ₽</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Расходы</Text>
-          <Text style={[styles.summaryValue, { color: 'red' }]}>
-            -{totalExpenses.toLocaleString()} ₽
-          </Text>
+          <Text style={[styles.summaryValue, { color: 'red' }]}>-{props.totalExpenses.toLocaleString()} ₽</Text>
         </View>
         <View style={styles.summaryCard}>
           <Text style={styles.summaryLabel}>Баланс</Text>
-          <Text style={[styles.summaryValue, { color: balance >= 0 ? 'green' : 'red' }]}>
-            {balance >= 0 ? '+' : ''}{balance.toLocaleString()} ₽
+          <Text style={[styles.summaryValue, { color: props.balance >= 0 ? 'green' : 'red' }]}>
+            {props.balance >= 0 ? '+' : ''}{props.balance.toLocaleString()} ₽
           </Text>
         </View>
       </View>
 
-      {/* Расходы по категориям */}
       <Text style={styles.sectionTitle}>Расходы по категориям</Text>
       <View style={styles.table}>
         <View style={[styles.tableRow, styles.tableHeader]}>
           <View style={styles.tableColCategory}><Text>Категория</Text></View>
           <View style={styles.tableColAmount}><Text>Сумма</Text></View>
         </View>
-        {expensesByCategory.map(([category, amount]) => (
-          <View style={styles.tableRow} key={category}>
-            <View style={styles.tableColCategory}><Text>{category}</Text></View>
-            <View style={styles.tableColAmount}><Text>{amount.toLocaleString()} ₽</Text></View>
+        {props.expensesByCategory.map(([cat, amt]) => (
+          <View style={styles.tableRow} key={cat}>
+            <View style={styles.tableColCategory}><Text>{cat}</Text></View>
+            <View style={styles.tableColAmount}><Text>{amt.toLocaleString()} ₽</Text></View>
           </View>
         ))}
       </View>
 
-      {/* Детали транзакций */}
       <Text style={styles.sectionTitle}>Детали транзакций</Text>
       <View style={styles.table}>
         <View style={[styles.tableRow, styles.tableHeader]}>
@@ -157,12 +94,12 @@ export const ReportPDF = ({
           <View style={styles.tableColType}><Text>Тип</Text></View>
           <View style={styles.tableColComment}><Text>Комментарий</Text></View>
         </View>
-        {transactions.map((t) => (
+        {props.transactions.map(t => (
           <View style={styles.tableRow} key={t.id}>
             <View style={styles.tableColDate}><Text>{t.date}</Text></View>
             <View style={styles.tableColCategory}><Text>{t.category}</Text></View>
             <View style={styles.tableColAmount}>
-              <Text>{(t.type === 'income' ? '+' : '-')}{t.amount.toLocaleString()} ₽</Text>
+              <Text>{t.type === 'income' ? '+' : '-'}{t.amount.toLocaleString()} ₽</Text>
             </View>
             <View style={styles.tableColType}><Text>{t.type === 'income' ? 'Доход' : 'Расход'}</Text></View>
             <View style={styles.tableColComment}><Text>{t.comment || '—'}</Text></View>

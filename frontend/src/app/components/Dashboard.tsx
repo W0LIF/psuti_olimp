@@ -73,6 +73,7 @@ const parseDate = (dateStr: string): Date => {
 };
 
 const filterTransactionsByMonth = (transactions: Transaction[], currentMonth?: string): Transaction[] => {
+  if (!transactions || !Array.isArray(transactions)) return [];
   if (!currentMonth) return transactions;
   const normalized = currentMonth.trim();
   if (!normalized) return transactions;
@@ -216,8 +217,7 @@ export function Dashboard({ userName, currentMonth, onLogout }: DashboardProps) 
   };
 
   const transactions: Transaction[] = useMemo(() => {
-    if (!apiTransactions || !apiCategories) return [];
-    if (!Array.isArray(apiTransactions)) return [];
+    if (!apiTransactions || !apiCategories || !Array.isArray(apiTransactions)) return [];
     return apiTransactions.map(tx => {
       const category = apiCategories.find(cat => cat.id === tx.category_id);
       return {
