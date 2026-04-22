@@ -46,7 +46,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const fallbackUser: User = {
           id: 0,
           email,
-          full_name: email.split('@')[0],
+          full_name:
+            typeof email === 'string' && email.includes('@')
+              ? email.split('@')[0]
+              : email || 'Пользователь',
         };
         authService.setStoredUser(fallbackUser);
         setUser(fallbackUser);

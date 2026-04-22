@@ -30,7 +30,7 @@ export interface CategoryBudget {
 
 interface DashboardProps {
   userName: string;
-  currentMonth: string;
+  currentMonth?: string;
   onLogout: () => void;
 }
 
@@ -49,10 +49,21 @@ const getMonthIndex = (monthName: string): number => {
   return months[monthName] || new Date().getMonth();
 };
 
-const parseMonthYear = (monthYear: string): { month: number; year: number } => {
-  const [monthName, yearStr] = monthYear.split(' ');
+const parseMonthYear = (monthYear: string = ''): { month: number; year: number } => {
+  const defaultMonth = new Date();
+  const normalized = monthYear?.trim();
+  if (!normalized) {
+    return { month: defaultMonth.getMonth() + 1, year: defaultMonth.getFullYear() };
+  }
+
+  const [monthName, yearStr] = normalized.split(' ');
   const month = getMonthIndex(monthName) + 1;
   const year = parseInt(yearStr);
+
+  if (!monthName || Number.isNaN(year)) {
+    return { month: defaultMonth.getMonth() + 1, year: defaultMonth.getFullYear() };
+  }
+
   return { month, year };
 };
 
@@ -61,11 +72,16 @@ const parseDate = (dateStr: string): Date => {
   return new Date(year, month - 1, day);
 };
 
-const filterTransactionsByMonth = (transactions: Transaction[], currentMonth: string): Transaction[] => {
+const filterTransactionsByMonth = (transactions: Transaction[], currentMonth?: string): Transaction[] => {
   if (!currentMonth) return transactions;
-  const [monthName, yearStr] = currentMonth.split(' ');
+  const normalized = currentMonth.trim();
+  if (!normalized) return transactions;
+
+  const [monthName, yearStr] = normalized.split(' ');
   const year = parseInt(yearStr);
   const monthIndex = getMonthIndex(monthName);
+  if (!monthName || Number.isNaN(year)) return transactions;
+
   return transactions.filter(transaction => {
     const date = parseDate(transaction.date);
     return date.getMonth() === monthIndex && date.getFullYear() === year;

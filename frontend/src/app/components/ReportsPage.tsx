@@ -19,12 +19,26 @@ const getMonthName = (date: Date): string => {
   return months[date.getMonth()];
 };
 
+const parseMonthYear = (monthYear: string = '') => {
+  const normalized = monthYear?.trim();
+  if (!normalized) {
+    const now = new Date();
+    return { month: getMonthName(now), year: now.getFullYear() };
+  }
+
+  const [month, yearStr] = normalized.split(' ');
+  const year = parseInt(yearStr);
+  if (!month || Number.isNaN(year)) {
+    const now = new Date();
+    return { month: getMonthName(now), year: now.getFullYear() };
+  }
+
+  return { month, year };
+};
+
 export function ReportsPage({ transactions, currentMonth }: ReportsPageProps) {
   const reportRef = useRef<HTMLDivElement>(null);
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const [month, year] = currentMonth.split(' ');
-    return { month, year: parseInt(year) };
-  });
+  const [selectedMonth, setSelectedMonth] = useState(() => parseMonthYear(currentMonth));
 
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<string>();
@@ -137,10 +151,7 @@ export function ReportsPage({ transactions, currentMonth }: ReportsPageProps) {
           <div className="flex gap-2">
             <select
               value={`${selectedMonth.month} ${selectedMonth.year}`}
-              onChange={(e) => {
-                const [month, year] = e.target.value.split(' ');
-                setSelectedMonth({ month, year: parseInt(year) });
-              }}
+              onChange={(e) => setSelectedMonth(parseMonthYear(e.target.value))}
               className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
               {availableMonths.map(month => (

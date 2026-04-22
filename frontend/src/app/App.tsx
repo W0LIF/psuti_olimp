@@ -2,6 +2,16 @@ import { useAuth } from '../context/AuthContext';
 import { AuthPage } from './components/AuthPage';
 import { Dashboard } from './components/Dashboard';
 
+const MONTH_NAMES = [
+  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
+];
+
+const getCurrentMonthName = () => {
+  const now = new Date();
+  return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
+};
+
 export default function App() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
 
@@ -19,7 +29,11 @@ export default function App() {
   return (
     <div className="size-full">
       {isAuthenticated && user ? (
-        <Dashboard userName={user.full_name || user.email} onLogout={logout} />
+        <Dashboard
+          userName={user.full_name || user.email}
+          currentMonth={getCurrentMonthName()}
+          onLogout={logout}
+        />
       ) : (
         <AuthPage />
       )}

@@ -59,11 +59,14 @@ const getMonthIndex = (monthName: string): number => {
   return months[monthName] || new Date().getMonth();
 };
 
-const filterTransactionsByMonth = (transactions: Transaction[], currentMonth: string): Transaction[] => {
+const filterTransactionsByMonth = (transactions: Transaction[], currentMonth?: string): Transaction[] => {
   if (!currentMonth) return transactions;
-  const [monthName, yearStr] = currentMonth.split(' ');
+  const normalized = currentMonth.trim();
+  if (!normalized) return transactions;
+  const [monthName, yearStr] = normalized.split(' ');
   const year = parseInt(yearStr);
   const monthIndex = getMonthIndex(monthName);
+  if (!monthName || Number.isNaN(year)) return transactions;
   return transactions.filter(transaction => {
     const transactionDate = new Date(transaction.date);
     return transactionDate.getMonth() === monthIndex && transactionDate.getFullYear() === year;
