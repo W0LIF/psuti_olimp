@@ -1,7 +1,9 @@
+// frontend/src/app/components/MainApp.tsx
 import { useState } from 'react';
 import { LogOut, ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
 import { Navigation } from './Navigation';
 import { Dashboard, Transaction } from './Dashboard';
+import { ReportsPage } from './ReportsPage';
 import { ImportCSV } from './ImportCSV';
 import { SharedBudget } from './SharedBudget';
 import { SettingsPage } from './SettingsPage';
@@ -11,6 +13,21 @@ interface MainAppProps {
   userName: string;
   onLogout: () => void;
 }
+
+// Начальные транзакции
+const INITIAL_TRANSACTIONS: Transaction[] = [
+  { id: '1', amount: 35000, category: 'Стипендия', date: '2026-04-01', type: 'income', comment: 'Стипендия за апрель' },
+  { id: '2', amount: 500, category: 'Еда', date: '2026-04-05', type: 'expense', comment: 'Продукты' },
+  { id: '3', amount: 200, category: 'Транспорт', date: '2026-04-06', type: 'expense', comment: 'Маршрутка' },
+  { id: '4', amount: 3000, category: 'Кофе', date: '2026-04-10', type: 'expense', comment: 'Кофе с друзьями' },
+  { id: '5', amount: 1500, category: 'Развлечения', date: '2026-04-12', type: 'expense', comment: 'Кино' },
+  { id: '6', amount: 800, category: 'Учёба', date: '2026-04-15', type: 'expense', comment: 'Книги' },
+  { id: '7', amount: 35000, category: 'Стипендия', date: '2026-05-01', type: 'income', comment: 'Стипендия за май' },
+  { id: '8', amount: 600, category: 'Еда', date: '2026-05-05', type: 'expense', comment: 'Продукты' },
+  { id: '9', amount: 2500, category: 'Развлечения', date: '2026-05-10', type: 'expense', comment: 'Концерт' },
+  { id: '10', amount: 30000, category: 'Стипендия', date: '2025-04-01', type: 'income', comment: 'Стипендия за апрель 2025' },
+  { id: '11', amount: 1000, category: 'Еда', date: '2025-04-03', type: 'expense', comment: 'Продукты' },
+];
 
 // Функция для получения следующего месяца
 const getNextMonth = (current: string): string => {
@@ -44,13 +61,18 @@ export function MainApp({ userName: initialUserName, onLogout }: MainAppProps) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [userName, setUserName] = useState(initialUserName);
   const [currentMonth, setCurrentMonth] = useState('Апрель 2026');
+  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
 
   const handleUpdateProfile = (name: string, email: string, password: string) => {
     setUserName(name);
   };
 
-  const handleImportTransactions = (transactions: Omit<Transaction, 'id'>[]) => {
-    console.log('Imported transactions:', transactions);
+  const handleImportTransactions = (newTransactions: Omit<Transaction, 'id'>[]) => {
+    const transactionsWithIds = newTransactions.map(t => ({
+      ...t,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+    }));
+    setTransactions([...transactionsWithIds, ...transactions]);
   };
 
   const handlePrevMonth = () => {
@@ -95,7 +117,6 @@ export function MainApp({ userName: initialUserName, onLogout }: MainAppProps) {
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   
-                  {/* Выпадающий список месяцев */}
                   <div className="relative">
                     <select
                       value={currentMonth}
@@ -134,8 +155,32 @@ export function MainApp({ userName: initialUserName, onLogout }: MainAppProps) {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
-        {activeTab === 'dashboard' && <Dashboard userName={userName} currentMonth={currentMonth} />}
-        {activeTab === 'import' && <ImportCSV onImport={handleImportTransactions} />}
+        {activeTab === 'dashboard' && (
+          <Dashboard 
+            userName={userName} 
+            currentMonth={currentMonth}
+            transactions={transactions}
+            onAddTransaction={(transaction) => {
+              const newTransaction = {
+                ...transaction,
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
+              };
+              setTransactions([newTransaction, ...transactions]);
+            }}
+            onDeleteTransaction={(id) => {
+              setTransactions(transactions.filter(t => t.id !== id));
+            }}
+          />
+        )}
+        {activeTab === 'reports' && (
+          <ReportsPage 
+            transactions={transactions} 
+            currentMonth={currentMonth}
+          />
+        )}
+        {activeTab === 'import' && (
+          <ImportCSV onImport={handleImportTransactions} />
+        )}
         {activeTab === 'shared' && <SharedBudget />}
         {activeTab === 'settings' && (
           <SettingsPage userName={userName} onUpdateProfile={handleUpdateProfile} />
