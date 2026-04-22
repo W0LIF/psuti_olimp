@@ -184,7 +184,7 @@ function CategoryBudgetProgress({ category, limit, spent }: CategoryBudget) {
   );
 }
 
-export function Dashboard({ userName, currentMonth }: DashboardProps) {
+export function Dashboard({ userName, currentMonth, onLogout }: DashboardProps) {
   const [showTip, setShowTip] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
