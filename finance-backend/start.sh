@@ -1,10 +1,23 @@
 #!/bin/bash
 set -e
 
-# Run migrations if DATABASE_URL is set and not running tests
-if [ -n "$DATABASE_URL" ]; then
+echo "Starting application..."
+
+# Run migrations if DATABASE_URL is set
+if [ -n "postgresql+asyncpg://finance_1avb_user:zPoOxiKdghIsBSTbHyOzt8Loj6HfKekd@dpg-d7ke0eqqqhas73dtvtq0-a/finance_1avb" ]; then
     echo "Running database migrations..."
-    alembic upgrade head || echo "Migrations failed or already applied"
+    for i in {1..5}; do
+        echo "Migration attempt $i..."
+        if alembic upgrade head; then
+            echo "Migrations completed successfully"
+            break
+        else
+            echo "Migration attempt $i failed, waiting before retry..."
+            sleep 5
+        fi
+    done
+else
+    echo "No DATABASE_URL set, skipping migrations"
 fi
 
 # Start the application
