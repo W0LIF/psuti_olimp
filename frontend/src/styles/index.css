@@ -10,8 +10,15 @@ html {
 }
 
 body {
+  margin: 0;
+  min-height: 100vh;
   overflow-x: hidden;
   width: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Плавные переходы для адаптивности и темы */
@@ -19,6 +26,7 @@ body {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-duration: 0.2s;
   transition-timing-function: ease;
+  box-sizing: border-box;
 }
 
 @media (prefers-reduced-motion: reduce) {

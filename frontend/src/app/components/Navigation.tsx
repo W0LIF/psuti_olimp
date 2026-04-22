@@ -1,4 +1,5 @@
-import { Home, FileText, Users, Settings, Info } from 'lucide-react';
+// frontend/src/app/components/Navigation.tsx
+import { Home, FileText, Users, Settings, Info, BarChart } from 'lucide-react';
 
 interface NavigationProps {
   activeTab: string;
@@ -7,6 +8,7 @@ interface NavigationProps {
 
 const TABS = [
   { id: 'dashboard', label: 'Главная', icon: Home },
+  { id: 'reports', label: 'Отчеты', icon: BarChart },
   { id: 'import', label: 'Импорт', icon: FileText },
   { id: 'shared', label: 'Совместный', icon: Users },
   { id: 'settings', label: 'Настройки', icon: Settings },
