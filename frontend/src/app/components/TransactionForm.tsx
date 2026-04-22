@@ -96,7 +96,6 @@ export function TransactionForm({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Исправлено: добавлено поле name
   const allCategories: DisplayCategory[] = [
     ...DEFAULT_CATEGORIES.map(c => ({ 
       ...c, 
@@ -162,84 +161,84 @@ export function TransactionForm({
   const selectedCategoryData = allCategories.find(c => c.id === category);
 
   return (
-    <div className="bg-white lg:rounded-2xl lg:shadow-sm lg:border lg:border-border lg:p-6 lg:sticky lg:top-24">
-      <h3 className="mb-4 hidden lg:block text-lg font-medium">Добавить транзакцию</h3>
+    <div className="bg-white dark:bg-gray-800 lg:rounded-2xl lg:shadow-sm lg:border lg:border-border lg:p-6 lg:sticky lg:top-24">
+      <h3 className="mb-4 hidden lg:block text-lg font-medium text-foreground">Добавить транзакцию</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex gap-2">
-          <button type="button" onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg transition-all ${type === 'expense' ? 'bg-orange-100 text-orange-700 border-2 border-orange-300' : 'bg-muted text-muted-foreground border-2 border-transparent'}`}>Расход</button>
-          <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg transition-all ${type === 'income' ? 'bg-emerald-100 text-emerald-700 border-2 border-emerald-300' : 'bg-muted text-muted-foreground border-2 border-transparent'}`}>Доход</button>
+          <button type="button" onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg transition-all ${type === 'expense' ? 'bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-300 border-2 border-orange-300 dark:border-orange-700' : 'bg-muted dark:bg-gray-700 text-muted-foreground dark:text-gray-400 border-2 border-transparent'}`}>Расход</button>
+          <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg transition-all ${type === 'income' ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-300 dark:border-emerald-700' : 'bg-muted dark:bg-gray-700 text-muted-foreground dark:text-gray-400 border-2 border-transparent'}`}>Доход</button>
         </div>
 
         <div>
-          <label className="block mb-2 text-sm">Сумма</label>
+          <label className="block mb-2 text-sm text-foreground">Сумма</label>
           <div className="relative">
-            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors" placeholder="1000" required min="0" step="0.01" />
+            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="1000" required min="0" step="0.01" />
             <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">₽</span>
           </div>
         </div>
 
         <div>
-          <label className="block mb-2 text-sm">Категория</label>
+          <label className="block mb-2 text-sm text-foreground">Категория</label>
           
           {!showNewCategory && !editingCategory ? (
             <div className="relative" ref={dropdownRef}>
-              <button type="button" onClick={() => setShowCategoryDropdown(!showCategoryDropdown)} className="w-full flex items-center justify-between px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary transition-colors">
+              <button type="button" onClick={() => setShowCategoryDropdown(!showCategoryDropdown)} className="w-full flex items-center justify-between px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary transition-colors">
                 <div className="flex items-center gap-3">
                   {selectedCategoryData && (
                     <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ backgroundColor: selectedCategoryData.color + '20', color: selectedCategoryData.color }}>
                       {(() => { const Icon = selectedCategoryData.icon; return <Icon className="w-3.5 h-3.5" />; })()}
                     </div>
                   )}
-                  <span className="text-sm">{category}</span>
+                  <span className="text-sm text-foreground">{category}</span>
                 </div>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showCategoryDropdown ? 'rotate-180' : ''}`} />
               </button>
 
               {showCategoryDropdown && (
-                <div className="absolute z-10 mt-1 w-full bg-white rounded-xl border border-border shadow-lg max-h-80 overflow-y-auto animate-slide-down">
+                <div className="absolute z-10 mt-1 w-full bg-white dark:bg-gray-800 rounded-xl border border-border shadow-lg max-h-80 overflow-y-auto animate-slide-down">
                   <div className="p-2 space-y-1">
                     {allCategories.map((cat) => (
                       <div key={cat.id} className="group flex items-center justify-between">
-                        <button type="button" onClick={() => { setCategory(cat.id); setShowCategoryDropdown(false); }} className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${category === cat.id ? 'bg-primary/10' : 'hover:bg-muted/50'}`}>
+                        <button type="button" onClick={() => { setCategory(cat.id); setShowCategoryDropdown(false); }} className={`flex-1 flex items-center gap-3 px-3 py-2 rounded-lg transition-all ${category === cat.id ? 'bg-primary/10 dark:bg-primary/20' : 'hover:bg-muted/50 dark:hover:bg-gray-700'}`}>
                           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: cat.color + '20', color: cat.color }}>
                             {(() => { const Icon = cat.icon; return <Icon className="w-4 h-4" />; })()}
                           </div>
-                          <span className="flex-1 text-left text-sm">{cat.id}</span>
+                          <span className="flex-1 text-left text-sm text-foreground">{cat.id}</span>
                           {cat.isCustom && <span className="text-xs text-muted-foreground">пользовательская</span>}
                         </button>
                         {cat.isCustom && cat.originalId && (
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity mr-2">
-                            <button type="button" onClick={() => { const originalCat = categories.find(c => c.id === cat.originalId); if (originalCat) { setEditingCategory(originalCat); setNewCategoryName(cat.name); setShowCategoryDropdown(false); } }} className="p-1.5 hover:bg-muted rounded-lg"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                            <button type="button" onClick={() => handleDeleteCategoryClick(cat)} className="p-1.5 hover:bg-red-100 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
+                            <button type="button" onClick={() => { const originalCat = categories.find(c => c.id === cat.originalId); if (originalCat) { setEditingCategory(originalCat); setNewCategoryName(cat.name); setShowCategoryDropdown(false); } }} className="p-1.5 hover:bg-muted dark:hover:bg-gray-700 rounded-lg"><Edit2 className="w-3.5 h-3.5 text-muted-foreground" /></button>
+                            <button type="button" onClick={() => handleDeleteCategoryClick(cat)} className="p-1.5 hover:bg-red-100 dark:hover:bg-red-950/50 rounded-lg"><Trash2 className="w-3.5 h-3.5 text-red-500" /></button>
                           </div>
                         )}
                       </div>
                     ))}
                     <div className="border-t border-border my-2" />
-                    <button type="button" onClick={() => { setShowCategoryDropdown(false); setShowNewCategory(true); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-primary hover:bg-primary/5 transition-colors"><Plus className="w-4 h-4" /><span className="text-sm">Создать свою категорию</span></button>
+                    <button type="button" onClick={() => { setShowCategoryDropdown(false); setShowNewCategory(true); }} className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-primary hover:bg-primary/5 dark:hover:bg-primary/10 transition-colors"><Plus className="w-4 h-4" /><span className="text-sm">Создать свою категорию</span></button>
                   </div>
                 </div>
               )}
             </div>
           ) : showNewCategory ? (
-            <div className="space-y-3 border border-primary/30 rounded-lg p-4 bg-primary/5 animate-slide-down">
-              <div className="flex items-center justify-between"><label className="text-sm font-medium">Новая категория</label><button type="button" onClick={() => setShowNewCategory(false)} className="p-1 hover:bg-muted rounded-lg"><X className="w-4 h-4" /></button></div>
-              <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Название" className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-sm" autoFocus />
-              <div><label className="text-xs text-muted-foreground mb-2 block">Иконка</label><div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-1">{ICONS_LIST.map((ic) => { const Icon = ic.icon; return (<button key={ic.name} type="button" onClick={() => setNewCategoryIcon(ic.name)} className={`p-2 rounded-lg transition-all ${newCategoryIcon === ic.name ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}><Icon className="w-5 h-5 mx-auto" /></button>); })}</div></div>
+            <div className="space-y-3 border border-primary/30 rounded-lg p-4 bg-primary/5 dark:bg-primary/10 animate-slide-down">
+              <div className="flex items-center justify-between"><label className="text-sm font-medium text-foreground">Новая категория</label><button type="button" onClick={() => setShowNewCategory(false)} className="p-1 hover:bg-muted dark:hover:bg-gray-700 rounded-lg"><X className="w-4 h-4" /></button></div>
+              <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Название" className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-sm text-foreground placeholder:text-muted-foreground" autoFocus />
+              <div><label className="text-xs text-muted-foreground mb-2 block">Иконка</label><div className="grid grid-cols-6 gap-2 max-h-32 overflow-y-auto p-1">{ICONS_LIST.map((ic) => { const Icon = ic.icon; return (<button key={ic.name} type="button" onClick={() => setNewCategoryIcon(ic.name)} className={`p-2 rounded-lg transition-all ${newCategoryIcon === ic.name ? 'bg-primary text-white' : 'bg-muted dark:bg-gray-700 text-muted-foreground hover:bg-muted/80'}`}><Icon className="w-5 h-5 mx-auto" /></button>); })}</div></div>
               <div><label className="text-xs text-muted-foreground mb-2 block">Цвет</label><div className="flex flex-wrap gap-2">{COLOR_PRESETS.map((color) => (<button key={color} type="button" onClick={() => setNewCategoryColor(color)} className={`w-7 h-7 rounded-full transition-all ${newCategoryColor === color ? 'ring-2 ring-offset-1 ring-primary scale-110' : 'hover:scale-105'}`} style={{ backgroundColor: color }} />))}</div></div>
               <button type="button" onClick={handleAddNewCategory} disabled={!newCategoryName.trim()} className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"><Check className="w-4 h-4" />Создать</button>
             </div>
           ) : (
-            <div className="space-y-3 border border-primary/30 rounded-lg p-4 bg-primary/5 animate-slide-down">
-              <div className="flex items-center justify-between"><label className="text-sm font-medium">Редактировать</label><button type="button" onClick={() => { setEditingCategory(null); setNewCategoryName(''); }} className="p-1 hover:bg-muted rounded-lg"><X className="w-4 h-4" /></button></div>
-              <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Название" className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-sm" autoFocus />
+            <div className="space-y-3 border border-primary/30 rounded-lg p-4 bg-primary/5 dark:bg-primary/10 animate-slide-down">
+              <div className="flex items-center justify-between"><label className="text-sm font-medium text-foreground">Редактировать</label><button type="button" onClick={() => { setEditingCategory(null); setNewCategoryName(''); }} className="p-1 hover:bg-muted dark:hover:bg-gray-700 rounded-lg"><X className="w-4 h-4" /></button></div>
+              <input type="text" value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} placeholder="Название" className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-sm text-foreground placeholder:text-muted-foreground" autoFocus />
               <button type="button" onClick={handleEditCategorySubmit} disabled={!newCategoryName.trim()} className="w-full py-2.5 bg-primary text-primary-foreground rounded-lg text-sm hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"><Check className="w-4 h-4" />Сохранить</button>
             </div>
           )}
         </div>
 
-        <div><label className="block mb-2 text-sm">Дата</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors" required /></div>
-        <div><label className="block mb-2 text-sm">Комментарий</label><input type="text" value={comment} onChange={(e) => setComment(e.target.value)} className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors" placeholder="Например: Обед в столовой" /></div>
+        <div><label className="block mb-2 text-sm text-foreground">Дата</label><input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground" required /></div>
+        <div><label className="block mb-2 text-sm text-foreground">Комментарий</label><input type="text" value={comment} onChange={(e) => setComment(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="Например: Обед в столовой" /></div>
         <button type="submit" className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2"><Plus className="w-5 h-5" />Добавить</button>
       </form>
     </div>

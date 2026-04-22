@@ -13,48 +13,29 @@ export function BudgetProgress({ spent, remaining, limit, percentage }: BudgetPr
     if (percentage >= 80) return 'bg-yellow-500';
     return 'bg-emerald-500';
   };
-
   const getBackgroundColor = () => {
-    if (percentage >= 100) return 'bg-red-50';
-    if (percentage >= 80) return 'bg-yellow-50';
-    return 'bg-emerald-50';
+    if (percentage >= 100) return 'bg-red-50 dark:bg-red-950/30';
+    if (percentage >= 80) return 'bg-yellow-50 dark:bg-yellow-950/30';
+    return 'bg-emerald-50 dark:bg-emerald-950/30';
   };
-
+  const getBorderColor = () => {
+    if (percentage >= 80) return 'border-yellow-200 dark:border-yellow-800';
+    return 'border-border';
+  };
   return (
-    <div className={`${getBackgroundColor()} rounded-2xl border ${percentage >= 80 ? 'border-yellow-200' : 'border-border'} p-6 transition-colors`}>
+    <div className={`${getBackgroundColor()} rounded-2xl border ${getBorderColor()} p-6 transition-colors`}>
       <div className="flex items-center justify-between mb-4">
-        <h3>Бюджет на месяц</h3>
+        <h3 className="text-foreground">Бюджет на месяц</h3>
         {percentage >= 80 && (
-          <div className="flex items-center gap-1 text-yellow-700 text-sm">
-            <AlertCircle className="w-4 h-4" />
-            <span>{percentage >= 100 ? 'Превышен!' : 'Внимание!'}</span>
-          </div>
+          <div className="flex items-center gap-1 text-yellow-700 dark:text-yellow-400 text-sm"><AlertCircle className="w-4 h-4" /><span>{percentage >= 100 ? 'Превышен!' : 'Внимание!'}</span></div>
         )}
       </div>
-
       <div className="space-y-4">
-        <div className="relative w-full h-3 bg-white/60 rounded-full overflow-hidden">
-          <div
-            className={`absolute top-0 left-0 h-full ${getProgressColor()} transition-all duration-500 rounded-full`}
-            style={{ width: `${Math.min(percentage, 100)}%` }}
-          />
-        </div>
-
+        <div className="relative w-full h-3 bg-white/60 dark:bg-gray-700 rounded-full overflow-hidden"><div className={`absolute top-0 left-0 h-full ${getProgressColor()} transition-all duration-500 rounded-full`} style={{ width: `${Math.min(percentage, 100)}%` }} /></div>
         <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Потрачено</p>
-            <p style={{ fontWeight: '600' }}>{spent.toLocaleString('ru-RU')} ₽</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Осталось</p>
-            <p style={{ fontWeight: '600' }} className={remaining < 0 ? 'text-red-600' : ''}>
-              {remaining.toLocaleString('ru-RU')} ₽
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Лимит</p>
-            <p style={{ fontWeight: '600' }}>{limit.toLocaleString('ru-RU')} ₽</p>
-          </div>
+          <div><p className="text-sm text-muted-foreground mb-1">Потрачено</p><p className="font-semibold text-foreground">{spent.toLocaleString('ru-RU')} ₽</p></div>
+          <div><p className="text-sm text-muted-foreground mb-1">Осталось</p><p className={`font-semibold ${remaining < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{remaining.toLocaleString('ru-RU')} ₽</p></div>
+          <div><p className="text-sm text-muted-foreground mb-1">Лимит</p><p className="font-semibold text-foreground">{limit.toLocaleString('ru-RU')} ₽</p></div>
         </div>
       </div>
     </div>
