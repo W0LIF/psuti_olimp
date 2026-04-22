@@ -4,7 +4,7 @@ set -e
 echo "Starting application..."
 
 # Run migrations if DATABASE_URL is set
-if [ -n "postgresql+asyncpg://finance_1avb_user:zPoOxiKdghIsBSTbHyOzt8Loj6HfKekd@dpg-d7ke0eqqqhas73dtvtq0-a/finance_1avb" ]; then
+if [ -n "$DATABASE_URL" ]; then
     echo "Running database migrations..."
     for i in {1..5}; do
         echo "Migration attempt $i..."
