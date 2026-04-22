@@ -1,5 +1,6 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import type { Transaction } from './Dashboard';
+import { useCurrency } from './CurrencyContext';
 
 interface ExpenseChartProps {
   transactions?: Transaction[];
@@ -18,16 +19,18 @@ const COLORS: Record<string, string> = {
 };
 
 export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) {
-  let data;
+  const { format } = useCurrency();
 
-  if (categoryData) {
+  let data: Array<{ name: string; value: number; color: string }> = [];
+
+  if (categoryData && categoryData.length > 0) {
     // Используем готовые данные из API
     data = categoryData.map(item => ({
       name: item.category,
       value: item.amount,
       color: COLORS[item.category] || '#6b7280',
     }));
-  } else if (transactions) {
+  } else if (transactions && transactions.length > 0) {
     // Рассчитываем из транзакций (fallback)
     const categoryTotals = transactions.reduce((acc, transaction) => {
       const category = transaction.category;
@@ -40,16 +43,14 @@ export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) 
       value,
       color: COLORS[name] || '#6b7280',
     }));
-  } else {
-    data = [];
   }
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
   if (data.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-border p-6">
-        <h3 className="mb-4">Расходы по категориям</h3>
+      <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
+        <h3 className="mb-4 text-foreground">Расходы по категориям</h3>
         <p className="text-center text-muted-foreground py-12">
           Нет данных для отображения
         </p>
@@ -58,8 +59,8 @@ export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) 
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-border p-6">
-      <h3 className="mb-4">Расходы по категориям</h3>
+    <div className="bg-card rounded-2xl shadow-sm border border-border p-6">
+      <h3 className="mb-4 text-foreground">Расходы по категориям</h3>
 
       <div className="flex flex-col lg:flex-row items-center gap-6">
         <div className="w-full lg:w-1/2">
@@ -80,7 +81,15 @@ export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) 
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value: number) => `${value.toLocaleString('ru-RU')} ₽`}
+                formatter={(value: number) => format(value)}
+                contentStyle={{
+                  backgroundColor: 'var(--background)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--foreground)',
+                  borderRadius: '0.5rem',
+                  padding: '8px 12px',
+                  fontSize: '0.875rem'
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -94,10 +103,10 @@ export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) 
                   className="w-4 h-4 rounded"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-sm">{item.name}</span>
+                <span className="text-sm text-foreground">{item.name}</span>
               </div>
               <div className="text-right">
-                <p style={{ fontWeight: '600' }}>{item.value.toLocaleString('ru-RU')} ₽</p>
+                <p className="font-semibold text-foreground">{format(item.value)}</p>
                 <p className="text-xs text-muted-foreground">
                   {((item.value / total) * 100).toFixed(1)}%
                 </p>
