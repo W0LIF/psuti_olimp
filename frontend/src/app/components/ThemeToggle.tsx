@@ -1,3 +1,4 @@
+// frontend/src/app/components/ThemeToggle.tsx
 import { useState, useEffect } from 'react';
 import { Moon, Sun } from 'lucide-react';
 

@@ -1,23 +1,13 @@
+// frontend/src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { AuthPage } from './components/AuthPage';
-import { Dashboard } from './components/Dashboard';
-import { ReportsPage } from './components/ReportsPage';
-import { SettingsPage } from './components/SettingsPage';
-import { AboutPage } from './components/AboutPage';
-import { ImportCSV } from './components/ImportCSV';
-import { SharedBudget } from './components/SharedBudget';
-import { Navigation } from './components/Navigation';
-
-const MONTH_NAMES = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-];
-
-const getCurrentMonthName = () => {
-  const now = new Date();
-  return `${MONTH_NAMES[now.getMonth()]} ${now.getFullYear()}`;
-};
+import { AuthPage } from '../app/components/AuthPage';
+import { Dashboard } from '../app/components/Dashboard';
+import { ReportsPage } from '../app/components/ReportsPage';
+import { SettingsPage } from '../app/components/SettingsPage';
+import { AboutPage } from '../app/components/AboutPage';
+import { ImportCSV } from '../app/components/ImportCSV';
+import { SharedBudget } from '../app/components/SharedBudget';
 
 function AppContent() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -39,7 +29,6 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
       <main className="container mx-auto px-4 py-6">
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -48,7 +37,6 @@ function AppContent() {
             element={
               <Dashboard
                 userName={user.full_name || user.email}
-                currentMonth={getCurrentMonthName()}
                 onLogout={logout}
               />
             }
