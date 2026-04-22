@@ -26,3 +26,16 @@ app.include_router(categories.router)
 @app.get("/health")
 def health_check():
     return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
+
+@app.post("/migrate")
+def run_migrations():
+    """Manually run database migrations"""
+    import subprocess
+    try:
+        result = subprocess.run(["alembic", "upgrade", "head"], capture_output=True, text=True)
+        if result.returncode == 0:
+            return {"status": "success", "message": "Migrations completed"}
+        else:
+            return {"status": "error", "message": result.stderr}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
