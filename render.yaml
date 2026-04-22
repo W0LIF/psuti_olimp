@@ -2,16 +2,13 @@ services:
   - type: web
     name: finance-backend
     rootDirectory: finance-backend
-    env: python
-    pythonVersion: 3.12
-    buildCommand: pip install -r requirements.txt
-    startCommand: alembic upgrade head && gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    env: docker
     envVars:
       - key: DATABASE_URL
-        sync: false  # Set this in dashboard or from database service
+        sync: false  # Set in Render dashboard - connect a PostgreSQL database
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: false
       - key: ALLOWED_ORIGINS
-        value: "*"  # Change to your frontend URL in production
+        value: "*"
