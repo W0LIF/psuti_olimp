@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: finance-backend
+    rootDirectory: finance-backend
+    env: docker
+    envVars:
+      - key: DATABASE_URL
+        sync: false  # Set in Render dashboard - connect a PostgreSQL database
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_ORIGINS
+        value: "*"

@@ -2,15 +2,13 @@ version: '3.8'
 
 services:
   db:
-    image: postgres:18
+    image: postgres:17
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
       POSTGRES_DB: finance_db
     ports:
       - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U user"]
       interval: 5s
@@ -19,17 +17,12 @@ services:
 
   backend:
     build: .
-    ports:
-      - "8000:8000"
+    volumes:
+      - .:/app   # монтируем текущую папку, чтобы миграции сохранялись на хосте
     environment:
       DATABASE_URL: postgresql+asyncpg://user:password@db:5432/finance_db
-      SECRET_KEY: your-secret-key
+      SECRET_KEY: any_secret_key_for_migration
     depends_on:
       db:
         condition: service_healthy
-    command: >
-      sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000"
-
-volumes:
-  postgres_data:
+    command: sh -c "alembic revision --autogenerate -m 'initial' && alembic upgrade head"
