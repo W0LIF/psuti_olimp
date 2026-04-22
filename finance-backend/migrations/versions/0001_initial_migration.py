@@ -13,9 +13,6 @@ revision = '0001_initial_migration'
 down_revision = None
 branch_labels = None
 def upgrade():
-    transaction_type = sa.Enum('income', 'expense', name='transactiontype')
-    transaction_type.create(op.get_bind(), checkfirst=True)
-
     op.create_table(
         'users',
         sa.Column('id', sa.Integer(), primary_key=True, index=True),
@@ -61,5 +58,3 @@ def downgrade():
     op.drop_table('budgets')
     op.drop_table('categories')
     op.drop_table('users')
-    transaction_type = sa.Enum('income', 'expense', name='transactiontype')
-    transaction_type.drop(op.get_bind(), checkfirst=True)
