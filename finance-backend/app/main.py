@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from datetime import datetime
 from app.routers import auth, transactions, statistics, budget, insights, categories
 from app.config import settings
@@ -18,6 +19,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    if settings.DEBUG:
+        detail = str(exc)
+    else:
+        detail = "Internal Server Error"
+    return JSONResponse(status_code=500, content={"detail": detail})
 
 app.include_router(auth.router)
 app.include_router(transactions.router)
