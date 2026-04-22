@@ -6,7 +6,10 @@ from app.config import settings
 
 app = FastAPI(title="Student Finance API", version="1.0")
 
-origins = settings.ALLOWED_ORIGINS.split(",") if settings.ALLOWED_ORIGINS != "*" else ["*"]
+raw_origins = settings.ALLOWED_ORIGINS or "*"
+origins = [origin.strip().strip('"').strip("'") for origin in raw_origins.split(",") if origin.strip()]
+if not origins:
+    origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
