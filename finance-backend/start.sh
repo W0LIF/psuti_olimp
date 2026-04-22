@@ -6,11 +6,16 @@ echo "Starting application..."
 # Run migrations if DATABASE_URL is set
 if [ -n "$DATABASE_URL" ]; then
     echo "Running database migrations..."
-    if alembic upgrade head; then
-        echo "Migrations completed successfully"
-    else
-        echo "Warning: Migrations failed, but continuing with app startup"
-    fi
+    for i in {1..5}; do
+        echo "Migration attempt $i..."
+        if alembic upgrade head; then
+            echo "Migrations completed successfully"
+            break
+        else
+            echo "Migration attempt $i failed, waiting before retry..."
+            sleep 5
+        fi
+    done
 else
     echo "No DATABASE_URL set, skipping migrations"
 fi
