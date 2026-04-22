@@ -1,10 +1,13 @@
 // frontend/src/app/components/ReportsPage.tsx
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { Download, TrendingUp, TrendingDown, PieChart, Printer, FileText } from 'lucide-react';
-import { Transaction } from './Dashboard';
 import { pdf } from '@react-pdf/renderer';
 import { saveAs } from 'file-saver';
 import { ReportPDF } from './ReportPDF';
+import { transactionService, Transaction } from '../../services/transactions';
+import { categoryService } from '../../services/categories';
+import { useAsync } from '../../hooks/useAsync';
+import { toast } from 'sonner';
 
 interface ReportsPageProps {
   transactions: Transaction[];
@@ -36,9 +39,22 @@ const parseMonthYear = (monthYear: string = '') => {
   return { month, year };
 };
 
-export function ReportsPage({ transactions, currentMonth }: ReportsPageProps) {
+export function ReportsPage() {
   const reportRef = useRef<HTMLDivElement>(null);
-  const [selectedMonth, setSelectedMonth] = useState(() => parseMonthYear(currentMonth));
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return { month: getMonthName(now), year: now.getFullYear() };
+  });
+
+  const { data: transactions = [], loading, error, execute } = useAsync(
+    () => transactionService.getMonthlyTransactions(
+      getMonthIndex(selectedMonth.month) + 1,
+      selectedMonth.year
+    ),
+    [selectedMonth]
+  );
+
+  const { data: categories = [] } = useAsync(categoryService.getCategories, []);
 
   const availableMonths = useMemo(() => {
     const monthsSet = new Set<string>();
@@ -55,8 +71,8 @@ export function ReportsPage({ transactions, currentMonth }: ReportsPageProps) {
       const monthOrder = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
       return monthOrder.indexOf(monthB) - monthOrder.indexOf(monthA);
     });
-    return months.length > 0 ? months : [`${currentMonth}`];
-  }, [transactions, currentMonth]);
+    return months.length > 0 ? months : [`${selectedMonth.month} ${selectedMonth.year}`];
+  }, [transactions, selectedMonth]);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
@@ -136,6 +152,33 @@ export function ReportsPage({ transactions, currentMonth }: ReportsPageProps) {
   const printReport = () => {
     window.print();
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4">Загрузка отчетов...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center text-red-600">
+          <p>Ошибка загрузки данных: {error.message}</p>
+          <button
+            onClick={() => execute()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 print:space-y-4">

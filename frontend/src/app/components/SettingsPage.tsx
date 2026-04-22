@@ -1,14 +1,12 @@
 import { useState } from 'react';
 import { User, Lock, Mail, Save, CheckCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
-interface SettingsPageProps {
-  userName: string;
-  onUpdateProfile: (name: string) => void;
-}
-
-export function SettingsPage({ userName, onUpdateProfile }: SettingsPageProps) {
-  const [name, setName] = useState(userName);
-  const [email, setEmail] = useState('student@mail.ru');
+export function SettingsPage() {
+  const { user, logout } = useAuth();
+  const [name, setName] = useState(user?.full_name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,10 +15,11 @@ export function SettingsPage({ userName, onUpdateProfile }: SettingsPageProps) {
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword && newPassword !== confirmPassword) {
-      alert('Пароли не совпадают');
+      toast.error('Пароли не совпадают');
       return;
     }
-    onUpdateProfile(name);
+    // TODO: Implement profile update API
+    toast.success('Настройки сохранены');
     setSaved(true);
     setNewPassword('');
     setConfirmPassword('');

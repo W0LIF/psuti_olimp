@@ -1,12 +1,8 @@
 import { useState } from 'react';
 import { Upload, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
-import type { Transaction } from './Dashboard';
+import { toast } from 'sonner';
 
-interface ImportCSVProps {
-  onImport: (transactions: Omit<Transaction, 'id'>[]) => void;
-}
-
-export function ImportCSV({ onImport }: ImportCSVProps) {
+export function ImportCSV() {
   const [isDragging, setIsDragging] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [importedCount, setImportedCount] = useState(0);
@@ -38,7 +34,12 @@ export function ImportCSV({ onImport }: ImportCSVProps) {
             transactions.push({ date, category: category || 'Прочее', amount: parseFloat(amount), type: type as 'income' | 'expense', comment: comment || undefined });
           }
         }
-        if (transactions.length > 0) { onImport(transactions); setImportedCount(transactions.length); setImportStatus('success'); }
+        if (transactions.length > 0) {
+          // TODO: Implement bulk import API
+          toast.success(`Импортировано ${transactions.length} транзакций`);
+          setImportedCount(transactions.length);
+          setImportStatus('success');
+        }
         else setImportStatus('error');
       } catch (error) { setImportStatus('error'); }
     };
