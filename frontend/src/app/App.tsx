@@ -1,6 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { AuthPage } from './components/AuthPage';
-import { MainApp } from './components/MainApp';
+import { Dashboard } from './components/Dashboard';
 
 export default function App() {
   const { isAuthenticated, isLoading, user, logout } = useAuth();
@@ -19,7 +19,7 @@ export default function App() {
   return (
     <div className="size-full">
       {isAuthenticated && user ? (
-        <MainApp userName={user.full_name || user.email} onLogout={logout} />
+        <Dashboard userName={user.full_name || user.email} onLogout={logout} />
       ) : (
         <AuthPage />
       )}

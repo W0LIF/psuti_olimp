@@ -31,6 +31,7 @@ export interface CategoryBudget {
 interface DashboardProps {
   userName: string;
   currentMonth: string;
+  onLogout: () => void;
 }
 
 const ALL_CATEGORIES = [
@@ -417,13 +418,24 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-200 flex items-center justify-between flex-wrap gap-2">
-        <span>📊 Показаны транзакции за {currentMonth} • Всего: {filteredTransactions.length} шт.</span>
-        {hasActiveFilters && (
-          <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 underline">
-            Сбросить фильтры
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">Привет, {userName}</h1>
+            <p className="text-sm text-muted-foreground">Просмотр финансов за {currentMonth}</p>
+          </div>
+          <button onClick={onLogout} className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:opacity-90">
+            Выйти
           </button>
-        )}
+        </div>
+        <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-200 flex items-center justify-between flex-wrap gap-2">
+          <span>📊 Показаны транзакции за {currentMonth} • Всего: {filteredTransactions.length} шт.</span>
+          {hasActiveFilters && (
+            <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 underline">
+              Сбросить фильтры
+            </button>
+          )}
+        </div>
       </div>
 
       {overallLimit > 0 && isOverOverallLimit && (
