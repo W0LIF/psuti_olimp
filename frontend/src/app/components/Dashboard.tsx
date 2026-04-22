@@ -8,6 +8,11 @@ import { TransactionForm, Category } from './TransactionForm';
 import { TransactionList } from './TransactionList';
 import { ForecastPanel } from './ForecastPanel';
 import { TransactionFilters, Filters } from './TransactionFilters';
+import { useAsync } from '../../hooks/useAsync';
+import { statsService } from '../../services/stats';
+import { transactionService, Transaction as ApiTransaction } from '../../services/transactions';
+import { categoryService, Category as ApiCategory } from '../../services/categories';
+import { toast } from 'sonner';
 
 export interface Transaction {
   id: string;
@@ -259,11 +264,10 @@ function CategoryBudgetProgress({ category, limit, spent }: CategoryBudget) {
 }
 
 export function Dashboard({ userName, currentMonth }: DashboardProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [showTip, setShowTip] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
-  
+
   // Состояние для фильтров
   const [filters, setFilters] = useState<Filters>({
     dateRange: 'all',
@@ -272,14 +276,60 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
     category: null,
     type: 'all',
   });
-  
-  // Состояние для категорий
-  const [customCategories, setCustomCategories] = useState<Category[]>(INITIAL_CATEGORIES);
-  
-  // Общий лимит
+
+  // Загружаем данные из API
+  const { data: stats, isLoading: statsLoading, error: statsError } = useAsync(
+    () => statsService.getDashboardStats(),
+    [currentMonth]
+  );
+
+  const { data: apiTransactions, isLoading: txLoading, error: txError } = useAsync(
+    () => transactionService.getMonthlyTransactions(
+      new Date().getMonth() + 1,
+      new Date().getFullYear()
+    ),
+    [currentMonth]
+  );
+
+  const { data: budgets, isLoading: budgetsLoading, error: budgetsError } = useAsync(
+    () => budgetService.getBudgetProgress(),
+    []
+  );
+
+  // Преобразуем API транзакции в формат компонента
+  const transactions: Transaction[] = useMemo(() => {
+    if (!apiTransactions || !apiCategories) return [];
+
+    return apiTransactions.map(tx => {
+      const category = apiCategories.find(cat => cat.id === tx.category_id);
+      return {
+        id: tx.id.toString(),
+        amount: tx.amount,
+        category: category?.name || 'Неизвестная категория',
+        date: tx.date,
+        comment: tx.comment,
+        type: tx.type,
+      };
+    });
+  }, [apiTransactions, apiCategories]);
+
+  // Преобразуем API категории в формат компонента
+  const customCategories: Category[] = useMemo(() => {
+    if (!apiCategories) return [];
+
+    return apiCategories.map(cat => ({
+      id: cat.id.toString(),
+      name: cat.name,
+      icon: cat.icon,
+      color: '#10b981', // дефолтный цвет
+      isCustom: !cat.is_default,
+    }));
+  }, [apiCategories]);
+
+  // Общий лимит (пока hardcoded, можно добавить API для этого)
   const [overallLimit, setOverallLimit] = useState(50000);
-  
-  // Лимиты по категориям
+
+  // Лимиты по категориям (пока hardcoded)
   const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>(() => {
     return ALL_CATEGORIES.map(category => ({
       category,
@@ -298,7 +348,7 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
     return monthFilteredTransactions.filter(transaction => {
       if (filters.type !== 'all' && transaction.type !== filters.type) return false;
       if (filters.category && transaction.category !== filters.category) return false;
-      
+
       if (filters.dateRange !== 'all') {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -361,33 +411,84 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
   }, [filteredTransactions]);
 
   // Функции для работы с транзакциями
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    const newTransaction = {
-      ...transaction,
-      id: Date.now().toString(),
-    };
-    setTransactions([newTransaction, ...transactions]);
-    setShowTransactionForm(false);
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    try {
+      // Находим ID категории по имени
+      const category = apiCategories?.find(cat => cat.name === transaction.category);
+      if (!category) {
+        toast.error('Категория не найдена');
+        return;
+      }
+
+      await transactionService.createTransaction({
+        amount: transaction.amount,
+        type: transaction.type,
+        date: transaction.date,
+        comment: transaction.comment,
+        category_id: category.id,
+      });
+
+      toast.success('Транзакция добавлена');
+      setShowTransactionForm(false);
+
+      // Перезагружаем данные
+      window.location.reload(); // Временное решение, лучше использовать refetch
+    } catch (error) {
+      toast.error('Ошибка при добавлении транзакции');
+    }
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions(transactions.filter(t => t.id !== id));
+  const deleteTransaction = async (id: string) => {
+    try {
+      await transactionService.deleteTransaction(parseInt(id));
+      toast.success('Транзакция удалена');
+
+      // Перезагружаем данные
+      window.location.reload(); // Временное решение, лучше использовать refetch
+    } catch (error) {
+      toast.error('Ошибка при удалении транзакции');
+    }
   };
 
   // Функции для работы с категориями
-  const handleAddCategory = (category: Omit<Category, 'id'>) => {
-    const newCategory = { ...category, id: Date.now().toString() };
-    setCustomCategories([...customCategories, newCategory]);
+  const handleAddCategory = async (category: Omit<Category, 'id'>) => {
+    try {
+      await categoryService.createCategory({
+        name: category.name,
+        icon: category.icon,
+        is_default: false,
+      });
+      toast.success('Категория добавлена');
+
+      // Перезагружаем данные
+      window.location.reload(); // Временное решение, лучше использовать refetch
+    } catch (error) {
+      toast.error('Ошибка при добавлении категории');
+    }
   };
 
-  const handleEditCategory = (id: string, name: string) => {
-    setCustomCategories(customCategories.map(cat => 
-      cat.id === id ? { ...cat, name } : cat
-    ));
+  const handleEditCategory = async (id: string, name: string) => {
+    try {
+      await categoryService.updateCategory(parseInt(id), { name });
+      toast.success('Категория обновлена');
+
+      // Перезагружаем данные
+      window.location.reload(); // Временное решение, лучше использовать refetch
+    } catch (error) {
+      toast.error('Ошибка при обновлении категории');
+    }
   };
 
-  const handleDeleteCategory = (id: string) => {
-    setCustomCategories(customCategories.filter(cat => cat.id !== id));
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await categoryService.deleteCategory(parseInt(id));
+      toast.success('Категория удалена');
+
+      // Перезагружаем данные
+      window.location.reload(); // Временное решение, лучше использовать refetch
+    } catch (error) {
+      toast.error('Ошибка при удалении категории');
+    }
   };
 
   // Функции для работы с лимитами
@@ -403,16 +504,39 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
     );
   };
 
-  // Расчёты на основе отфильтрованных транзакций
-  const income = filteredTransactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+  // Показываем загрузку или ошибку
+  if (statsLoading || txLoading || catLoading || budgetsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Загрузка данных...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const expenses = filteredTransactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+  if (statsError || txError || catError || budgetsError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Ошибка загрузки данных</div>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const balance = income - expenses;
+  // Используем данные из API
+  const balance = stats?.balance || 0;
+  const income = stats?.total_income || 0;
+  const expenses = stats?.total_expense || 0;
+
   const overallPercentage = overallLimit > 0 ? (expenses / overallLimit) * 100 : 0;
   const isOverOverallLimit = expenses >= overallLimit && overallLimit > 0;
   const isNearOverallLimit = overallPercentage >= 80 && overallPercentage < 100 && overallLimit > 0;
@@ -522,16 +646,24 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
           )}
 
           {/* Прогресс по категориям */}
-          {activeCategoryBudgets.length > 0 && (
+          {budgets && budgets.length > 0 && (
             <div className="bg-white rounded-2xl p-5 shadow-sm border border-border">
               <div className="flex items-center gap-2 mb-4">
                 <PieChart className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-foreground">Лимиты по категориям</h3>
               </div>
               <div className="space-y-3">
-                {activeCategoryBudgets.map(budget => (
-                  <CategoryBudgetProgress key={budget.category} {...budget} />
-                ))}
+                {budgets.map(budget => {
+                  const category = apiCategories?.find(cat => cat.id === budget.category_id);
+                  return (
+                    <CategoryBudgetProgress
+                      key={budget.budget_id}
+                      category={category?.name || 'Неизвестная категория'}
+                      limit={budget.limit}
+                      spent={budget.spent}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -545,8 +677,8 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
             balance={balance} 
           />
 
-          <ExpenseChart 
-            transactions={filteredTransactions.filter(t => t.type === 'expense')} 
+          <ExpenseChart
+            categoryData={stats?.category_breakdown}
           />
         </div>
 

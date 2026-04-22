@@ -1,24 +1,38 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
-interface AuthPageProps {
-  onLogin: (name: string) => void;
-}
-
-export function AuthPage({ onLogin }: AuthPageProps) {
+export function AuthPage() {
+  const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) {
-      onLogin(name || 'Александр');
-    } else {
-      if (password === confirmPassword) {
-        onLogin(name);
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+        toast.success('Успешно вошли в аккаунт');
+      } else {
+        if (password !== confirmPassword) {
+          toast.error('Пароли не совпадают');
+          setIsLoading(false);
+          return;
+        }
+        await register(email, password, fullName);
+        toast.success('Аккаунт создан! Добро пожаловать');
       }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Ошибка при авторизации';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -61,11 +75,10 @@ export function AuthPage({ onLogin }: AuthPageProps) {
               <label className="block mb-2">Имя</label>
               <input
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 className="w-full px-4 py-3 bg-input-background rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors"
                 placeholder="Александр"
-                required
               />
             </div>
           )}
@@ -110,9 +123,10 @@ export function AuthPage({ onLogin }: AuthPageProps) {
 
           <button
             type="submit"
-            className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity"
+            disabled={isLoading}
+            className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
           >
-            Продолжить
+            {isLoading ? 'Загрузка...' : 'Продолжить'}
           </button>
         </form>
 

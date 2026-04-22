@@ -2,7 +2,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recha
 import type { Transaction } from './Dashboard';
 
 interface ExpenseChartProps {
-  transactions: Transaction[];
+  transactions?: Transaction[];
+  categoryData?: Array<{ category: string; icon: string; amount: number }>;
 }
 
 const COLORS: Record<string, string> = {
@@ -16,18 +17,32 @@ const COLORS: Record<string, string> = {
   'Стипендия': '#22c55e',
 };
 
-export function ExpenseChart({ transactions }: ExpenseChartProps) {
-  const categoryTotals = transactions.reduce((acc, transaction) => {
-    const category = transaction.category;
-    acc[category] = (acc[category] || 0) + transaction.amount;
-    return acc;
-  }, {} as Record<string, number>);
+export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) {
+  let data;
 
-  const data = Object.entries(categoryTotals).map(([name, value]) => ({
-    name,
-    value,
-    color: COLORS[name] || '#6b7280',
-  }));
+  if (categoryData) {
+    // Используем готовые данные из API
+    data = categoryData.map(item => ({
+      name: item.category,
+      value: item.amount,
+      color: COLORS[item.category] || '#6b7280',
+    }));
+  } else if (transactions) {
+    // Рассчитываем из транзакций (fallback)
+    const categoryTotals = transactions.reduce((acc, transaction) => {
+      const category = transaction.category;
+      acc[category] = (acc[category] || 0) + transaction.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    data = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value,
+      color: COLORS[name] || '#6b7280',
+    }));
+  } else {
+    data = [];
+  }
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
 
