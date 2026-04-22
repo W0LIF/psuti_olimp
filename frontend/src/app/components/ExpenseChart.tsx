@@ -3,7 +3,8 @@ import type { Transaction } from './Dashboard';
 import { useCurrency } from './CurrencyContext';
 
 interface ExpenseChartProps {
-  transactions: Transaction[];
+  transactions?: Transaction[];
+  categoryData?: Array<{ category: string; icon: string; amount: number }>;
 }
 
 const COLORS: Record<string, string> = {
@@ -17,20 +18,32 @@ const COLORS: Record<string, string> = {
   'Стипендия': '#22c55e',
 };
 
-export function ExpenseChart({ transactions }: ExpenseChartProps) {
+export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) {
   const { format } = useCurrency();
 
-  const categoryTotals = transactions.reduce((acc, transaction) => {
-    const category = transaction.category;
-    acc[category] = (acc[category] || 0) + transaction.amount;
-    return acc;
-  }, {} as Record<string, number>);
+  let data: Array<{ name: string; value: number; color: string }> = [];
 
-  const data = Object.entries(categoryTotals).map(([name, value]) => ({
-    name,
-    value,
-    color: COLORS[name] || '#6b7280',
-  }));
+  if (categoryData && categoryData.length > 0) {
+    // Используем готовые данные из API
+    data = categoryData.map(item => ({
+      name: item.category,
+      value: item.amount,
+      color: COLORS[item.category] || '#6b7280',
+    }));
+  } else if (transactions && transactions.length > 0) {
+    // Рассчитываем из транзакций (fallback)
+    const categoryTotals = transactions.reduce((acc, transaction) => {
+      const category = transaction.category;
+      acc[category] = (acc[category] || 0) + transaction.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    data = Object.entries(categoryTotals).map(([name, value]) => ({
+      name,
+      value,
+      color: COLORS[name] || '#6b7280',
+    }));
+  }
 
   const total = data.reduce((sum, item) => sum + item.value, 0);
 

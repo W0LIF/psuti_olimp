@@ -1,6 +1,6 @@
 import { Coffee, Bus, BookOpen, Film, Wallet, ShoppingBag, Home, X } from 'lucide-react';
 import type { Transaction } from './Dashboard';
-import { useCurrency } from '../lib/CurrencyContext';
+import { useCurrency } from './CurrencyContext';
 
 interface TransactionListProps {
   transactions: Transaction[];

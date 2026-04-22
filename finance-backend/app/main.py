@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
-from app.routers import auth, transactions, statistics, budgets, insights
+from app.routers import auth, transactions, statistics, budgets, insights, categories
 from app.config import settings
 
 app = FastAPI(title="Student Finance API", version="1.0")
@@ -21,6 +21,7 @@ app.include_router(transactions.router)
 app.include_router(statistics.router)
 app.include_router(budgets.router)
 app.include_router(insights.router)
+app.include_router(categories.router)
 
 @app.get("/health")
 def health_check():

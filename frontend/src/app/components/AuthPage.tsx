@@ -1,20 +1,39 @@
 import { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
-interface AuthPageProps {
-  onLogin: (name: string) => void;
-}
-
-export function AuthPage({ onLogin }: AuthPageProps) {
+export function AuthPage() {
+  const { login, register } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLogin) onLogin(name || 'Александр');
-    else if (password === confirmPassword) onLogin(name);
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        await login(email, password);
+        toast.success('Успешно вошли в аккаунт');
+      } else {
+        if (password !== confirmPassword) {
+          toast.error('Пароли не совпадают');
+          setIsLoading(false);
+          return;
+        }
+        await register(email, password, fullName);
+        toast.success('Аккаунт создан! Добро пожаловать');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Ошибка при авторизации';
+      toast.error(errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -32,24 +51,57 @@ export function AuthPage({ onLogin }: AuthPageProps) {
           {!isLogin && (
             <div>
               <label className="block mb-2 text-foreground">Имя</label>
-              <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="Александр" required />
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+                placeholder="Александр"
+              />
             </div>
           )}
           <div>
             <label className="block mb-2 text-foreground">Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="student@mail.ru" required />
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+              placeholder="student@mail.ru"
+              required
+            />
           </div>
           <div>
             <label className="block mb-2 text-foreground">Пароль</label>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="••••••••" required />
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+              placeholder="••••••••"
+              required
+            />
           </div>
           {!isLogin && (
             <div>
               <label className="block mb-2 text-foreground">Повторите пароль</label>
-              <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground" placeholder="••••••••" required />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground placeholder:text-muted-foreground"
+                placeholder="••••••••"
+                required
+              />
             </div>
           )}
-          <button type="submit" className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity">Продолжить</button>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-primary text-primary-foreground py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50"
+          >
+            {isLoading ? 'Загрузка...' : 'Продолжить'}
+          </button>
         </form>
         <p className="text-center text-xs text-muted-foreground mt-6">Данные сохраняются на сервере — доступ с любого устройства</p>
       </div>

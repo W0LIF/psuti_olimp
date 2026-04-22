@@ -5,6 +5,7 @@ from app.schemas import UserCreate, UserOut, Token
 from app.models import User, Category
 from app.auth import get_password_hash, create_access_token, verify_password
 from app.database import get_db
+from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -42,3 +43,7 @@ async def login(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_access_token(data={"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/me", response_model=UserOut)
+async def get_current_user_endpoint(user: User = Depends(get_current_user)):
+    return user

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { X, Plus, Settings, AlertCircle, Target, PieChart } from 'lucide-react';
+import { X, Plus, Settings, AlertCircle, PieChart } from 'lucide-react';
 import { BalanceCard } from './BalanceCard';
 import { BudgetProgress } from './BudgetProgress';
 import { SmartTip } from './SmartTip';
@@ -8,6 +8,10 @@ import { TransactionForm, Category } from './TransactionForm';
 import { TransactionList } from './TransactionList';
 import { ForecastPanel } from './ForecastPanel';
 import { TransactionFilters, Filters } from './TransactionFilters';
+import { useAsync } from '../../hooks/useAsync';
+import { transactionService, Transaction as ApiTransaction } from '../../services/transactions';
+import { categoryService, Category as ApiCategory } from '../../services/categories';
+import { toast } from 'sonner';
 
 export interface Transaction {
   id: string;
@@ -30,20 +34,9 @@ interface DashboardProps {
 }
 
 const ALL_CATEGORIES = [
-  'Еда', 'Транспорт', 'Кофе', 'Развлечения', 'Учёба', 
-  'Кафе и рестораны', 'Покупки', 'Здоровье', 'Дом', 
+  'Еда', 'Транспорт', 'Кофе', 'Развлечения', 'Учёба',
+  'Кафе и рестораны', 'Покупки', 'Здоровье', 'Дом',
   'Связь', 'Образование', 'Прочее'
-];
-
-const INITIAL_CATEGORIES: Category[] = [
-  { id: '1', name: 'Кофе', icon: 'Coffee', color: '#f59e0b', isCustom: false },
-  { id: '2', name: 'Еда', icon: 'Coffee', color: '#f97316', isCustom: false },
-  { id: '3', name: 'Транспорт', icon: 'Bus', color: '#3b82f6', isCustom: false },
-  { id: '4', name: 'Развлечения', icon: 'Film', color: '#ec4899', isCustom: false },
-  { id: '5', name: 'Покупки', icon: 'ShoppingBag', color: '#10b981', isCustom: false },
-  { id: '6', name: 'Дом', icon: 'Home', color: '#06b6d4', isCustom: false },
-  { id: '7', name: 'Учёба', icon: 'BookOpen', color: '#a855f7', isCustom: false },
-  { id: '8', name: 'Стипендия', icon: 'Wallet', color: '#22c55e', isCustom: false },
 ];
 
 const getMonthIndex = (monthName: string): number => {
@@ -55,37 +48,46 @@ const getMonthIndex = (monthName: string): number => {
   return months[monthName] || new Date().getMonth();
 };
 
+const parseMonthYear = (monthYear: string): { month: number; year: number } => {
+  const [monthName, yearStr] = monthYear.split(' ');
+  const month = getMonthIndex(monthName) + 1;
+  const year = parseInt(yearStr);
+  return { month, year };
+};
+
+const parseDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
 const filterTransactionsByMonth = (transactions: Transaction[], currentMonth: string): Transaction[] => {
   if (!currentMonth) return transactions;
   const [monthName, yearStr] = currentMonth.split(' ');
   const year = parseInt(yearStr);
   const monthIndex = getMonthIndex(monthName);
   return transactions.filter(transaction => {
-    const transactionDate = new Date(transaction.date);
-    return transactionDate.getMonth() === monthIndex && transactionDate.getFullYear() === year;
+    const date = parseDate(transaction.date);
+    return date.getMonth() === monthIndex && date.getFullYear() === year;
   });
 };
 
-const INITIAL_TRANSACTIONS: Transaction[] = [
-  { id: '1', amount: 35000, category: 'Стипендия', date: '2026-04-01', type: 'income' },
-  { id: '2', amount: 500, category: 'Еда', date: '2026-04-05', type: 'expense' },
-  { id: '3', amount: 200, category: 'Транспорт', date: '2026-04-06', type: 'expense' },
-  { id: '4', amount: 3000, category: 'Кофе', date: '2026-04-10', type: 'expense' },
-  { id: '5', amount: 1500, category: 'Развлечения', date: '2026-04-12', type: 'expense' },
-  { id: '6', amount: 800, category: 'Учёба', date: '2026-04-15', type: 'expense' },
-  { id: '7', amount: 35000, category: 'Стипендия', date: '2026-05-01', type: 'income' },
-  { id: '8', amount: 600, category: 'Еда', date: '2026-05-05', type: 'expense' },
-  { id: '9', amount: 2500, category: 'Развлечения', date: '2026-05-10', type: 'expense' },
-  { id: '10', amount: 30000, category: 'Стипендия', date: '2025-04-01', type: 'income' },
-  { id: '11', amount: 1000, category: 'Еда', date: '2025-04-03', type: 'expense' },
-];
-
-function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLimit, categoryBudgets, onUpdateCategoryBudget }: any) {
+function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLimit, categoryBudgets, onUpdateCategoryBudget, onSaveAll }: any) {
   const [tempOverallLimit, setTempOverallLimit] = useState(overallLimit.toString());
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [tempLimit, setTempLimit] = useState('');
 
   if (!isOpen) return null;
+
+  const handleSaveOverall = () => {
+    const newLimit = parseFloat(tempOverallLimit);
+    if (!isNaN(newLimit) && newLimit > 0) onUpdateOverallLimit(newLimit);
+  };
+
+  const handleSaveCategory = (category: string) => {
+    const newLimit = parseFloat(tempLimit);
+    if (!isNaN(newLimit) && newLimit >= 0) onUpdateCategoryBudget(category, newLimit);
+    setEditingCategory(null);
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -99,7 +101,7 @@ function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLim
             <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-3">Общий лимит на месяц</h3>
             <div className="flex gap-2">
               <input type="number" value={tempOverallLimit} onChange={(e) => setTempOverallLimit(e.target.value)} className="flex-1 px-4 py-2 bg-input-background dark:bg-gray-700 rounded-lg border border-transparent focus:border-primary focus:outline-none transition-colors text-foreground" />
-              <button onClick={() => { const newLimit = parseFloat(tempOverallLimit); if (!isNaN(newLimit) && newLimit > 0) onUpdateOverallLimit(newLimit); }} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">Сохранить</button>
+              <button onClick={handleSaveOverall} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90">Сохранить</button>
             </div>
           </div>
           <div>
@@ -115,7 +117,7 @@ function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLim
                     {editingCategory === category ? (
                       <div className="flex gap-2">
                         <input type="number" value={tempLimit} onChange={(e) => setTempLimit(e.target.value)} className="w-32 px-2 py-1 text-sm bg-input-background dark:bg-gray-700 rounded border border-border focus:border-primary" autoFocus />
-                        <button onClick={() => { const newLimit = parseFloat(tempLimit); if (!isNaN(newLimit) && newLimit >= 0) onUpdateCategoryBudget(category, newLimit); setEditingCategory(null); }} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Сохранить</button>
+                        <button onClick={() => handleSaveCategory(category)} className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">Сохранить</button>
                         <button onClick={() => setEditingCategory(null)} className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">Отмена</button>
                       </div>
                     ) : (
@@ -125,6 +127,12 @@ function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLim
                 </div>
               ))}
             </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <button onClick={onClose} className="px-4 py-2 bg-muted text-muted-foreground rounded-lg">Закрыть</button>
+            {onSaveAll && (
+              <button onClick={onSaveAll} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg">Сохранить все</button>
+            )}
           </div>
         </div>
       </div>
@@ -160,29 +168,107 @@ function CategoryBudgetProgress({ category, limit, spent }: CategoryBudget) {
 }
 
 export function Dashboard({ userName, currentMonth }: DashboardProps) {
-  const [transactions, setTransactions] = useState<Transaction[]>(INITIAL_TRANSACTIONS);
   const [showTip, setShowTip] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
-  const [filters, setFilters] = useState<Filters>({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' });
-  const [customCategories, setCustomCategories] = useState<Category[]>(INITIAL_CATEGORIES);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const [filters, setFilters] = useState<Filters>({
+    dateRange: 'all',
+    startDate: null,
+    endDate: null,
+    category: null,
+    type: 'all',
+  });
+
+  const { month, year } = parseMonthYear(currentMonth);
+
+  // Только транзакции и категории — никакой статистики и бюджетов
+  const { data: apiTransactions, isLoading: txLoading, error: txError } = useAsync<ApiTransaction[]>(
+    () => transactionService.getMonthlyTransactions(month, year),
+    [month, year, refreshTrigger]
+  );
+
+  const { data: apiCategories, isLoading: catLoading, error: catError } = useAsync<ApiCategory[]>(
+    () => categoryService.getCategories(),
+    [refreshTrigger]
+  );
+
+  const refreshAllData = () => {
+    setRefreshTrigger(prev => prev + 1);
+  };
+
+  const transactions: Transaction[] = useMemo(() => {
+    if (!apiTransactions || !apiCategories) return [];
+    if (!Array.isArray(apiTransactions)) return [];
+    return apiTransactions.map(tx => {
+      const category = apiCategories.find(cat => cat.id === tx.category_id);
+      return {
+        id: tx.id.toString(),
+        amount: tx.amount,
+        category: category?.name || 'Неизвестная категория',
+        date: tx.date,
+        comment: tx.comment,
+        type: tx.type,
+      };
+    });
+  }, [apiTransactions, apiCategories]);
+
+  const allCategoriesForForm: Category[] = useMemo(() => {
+    if (!apiCategories) return [];
+    return apiCategories.map(cat => ({
+      id: cat.id.toString(),
+      name: cat.name,
+      icon: cat.icon,
+      color: '#10b981',
+      isCustom: !cat.is_default,
+    }));
+  }, [apiCategories]);
+
+  // Локальные лимиты (только для интерфейса, без бэка)
   const [overallLimit, setOverallLimit] = useState(50000);
-  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>(() => ALL_CATEGORIES.map(category => ({ category, limit: 0, spent: 0 })));
+  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>(() => {
+    return ALL_CATEGORIES.map(category => ({
+      category,
+      limit: 0,
+      spent: 0
+    }));
+  });
 
   const monthFilteredTransactions = useMemo(() => filterTransactionsByMonth(transactions, currentMonth), [transactions, currentMonth]);
+  
   const filteredTransactions = useMemo(() => {
     return monthFilteredTransactions.filter(transaction => {
       if (filters.type !== 'all' && transaction.type !== filters.type) return false;
       if (filters.category && transaction.category !== filters.category) return false;
+
       if (filters.dateRange !== 'all') {
         const today = new Date(); today.setHours(0,0,0,0);
+        const txDate = parseDate(transaction.date);
         switch (filters.dateRange) {
-          case 'today': { const d = new Date(transaction.date); d.setHours(0,0,0,0); if (d.getTime() !== today.getTime()) return false; break; }
-          case 'week': { const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0,0,0,0); if (new Date(transaction.date) < weekAgo) return false; break; }
-          case 'month': { const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0,0,0,0); if (new Date(transaction.date) < monthAgo) return false; break; }
+          case 'today':
+            if (txDate.toDateString() !== today.toDateString()) return false;
+            break;
+          case 'week': {
+            const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7); weekAgo.setHours(0,0,0,0);
+            if (txDate < weekAgo) return false;
+            break;
+          }
+          case 'month': {
+            const monthAgo = new Date(); monthAgo.setMonth(monthAgo.getMonth() - 1); monthAgo.setHours(0,0,0,0);
+            if (txDate < monthAgo) return false;
+            break;
+          }
           case 'custom': {
-            if (filters.startDate) { const start = new Date(filters.startDate); start.setHours(0,0,0,0); if (new Date(transaction.date) < start) return false; }
-            if (filters.endDate) { const end = new Date(filters.endDate); end.setHours(23,59,59,999); if (new Date(transaction.date) > end) return false; }
+            if (filters.startDate) {
+              const start = parseDate(filters.startDate);
+              if (txDate < start) return false;
+            }
+            if (filters.endDate) {
+              const end = parseDate(filters.endDate);
+              end.setHours(23,59,59,999);
+              if (txDate > end) return false;
+            }
             break;
           }
         }
@@ -191,32 +277,146 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
     });
   }, [monthFilteredTransactions, filters]);
 
+  // Подсчёт расходов для отображения в модалке лимитов
   useEffect(() => {
-    const expensesByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {} as Record<string, number>);
-    setCategoryBudgets(prev => prev.map(budget => ({ ...budget, spent: expensesByCategory[budget.category] || 0 })));
+    const expensesByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {} as Record<string, number>);
+    setCategoryBudgets(prev => prev.map(budget => ({
+      ...budget,
+      spent: expensesByCategory[budget.category] || 0
+    })));
   }, [filteredTransactions]);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => setTransactions([{ ...transaction, id: Date.now().toString() }, ...transactions]);
-  const deleteTransaction = (id: string) => setTransactions(transactions.filter(t => t.id !== id));
-  const handleAddCategory = (category: Omit<Category, 'id'>) => setCustomCategories([...customCategories, { ...category, id: Date.now().toString() }]);
-  const handleEditCategory = (id: string, name: string) => setCustomCategories(customCategories.map(cat => cat.id === id ? { ...cat, name } : cat));
-  const handleDeleteCategory = (id: string) => setCustomCategories(customCategories.filter(cat => cat.id !== id));
-  const updateOverallLimit = (newLimit: number) => setOverallLimit(newLimit);
-  const updateCategoryBudget = (category: string, limit: number) => setCategoryBudgets(prev => prev.map(budget => budget.category === category ? { ...budget, limit } : budget));
-
-  const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-  const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+  // Вычисляем доходы и расходы из транзакций (без statsService)
+  const income = useMemo(() => 
+    filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0),
+    [filteredTransactions]
+  );
+  const expenses = useMemo(() => 
+    filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0),
+    [filteredTransactions]
+  );
   const balance = income - expenses;
+
   const overallPercentage = overallLimit > 0 ? (expenses / overallLimit) * 100 : 0;
   const isOverOverallLimit = expenses >= overallLimit && overallLimit > 0;
   const isNearOverallLimit = overallPercentage >= 80 && overallPercentage < 100 && overallLimit > 0;
-  const activeCategoryBudgets = categoryBudgets.filter(b => b.limit > 0);
-  const getFilterInfo = () => { /* ... */ return ''; };
   const hasActiveFilters = filters.dateRange !== 'all' || filters.category !== null || filters.type !== 'all';
+
+  if (txLoading || catLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Загрузка данных...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (txError || catError) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="text-red-500 mb-4">Ошибка загрузки данных</div>
+          <button
+            onClick={refreshAllData}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
+          >
+            Попробовать снова
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
+    try {
+      const category = apiCategories?.find(cat => cat.name === transaction.category);
+      if (!category) {
+        toast.error('Категория не найдена');
+        return;
+      }
+      await transactionService.createTransaction({
+        amount: transaction.amount,
+        type: transaction.type,
+        date: transaction.date,
+        comment: transaction.comment,
+        category_id: category.id,
+      });
+      toast.success('Транзакция добавлена');
+      setShowTransactionForm(false);
+      refreshAllData();
+    } catch (error) {
+      toast.error('Ошибка при добавлении транзакции');
+    }
+  };
+
+  const deleteTransaction = async (id: string) => {
+    try {
+      await transactionService.deleteTransaction(parseInt(id));
+      toast.success('Транзакция удалена');
+      refreshAllData();
+    } catch (error) {
+      toast.error('Ошибка при удалении транзакции');
+    }
+  };
+
+  const handleAddCategory = async (category: Omit<Category, 'id'>) => {
+    try {
+      await categoryService.createCategory({
+        name: category.name,
+        icon: category.icon,
+        is_default: false,
+      });
+      toast.success('Категория добавлена');
+      refreshAllData();
+    } catch (error) {
+      toast.error('Ошибка при добавлении категории');
+    }
+  };
+
+  const handleEditCategory = async (id: string, name: string) => {
+    try {
+      await categoryService.updateCategory(parseInt(id), { name });
+      toast.success('Категория обновлена');
+      refreshAllData();
+    } catch (error) {
+      toast.error('Ошибка при обновлении категории');
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      await categoryService.deleteCategory(parseInt(id));
+      toast.success('Категория удалена');
+      refreshAllData();
+    } catch (error) {
+      toast.error('Ошибка при удалении категории');
+    }
+  };
+
+  const updateOverallLimit = (newLimit: number) => {
+    setOverallLimit(newLimit);
+  };
+
+  const updateCategoryBudget = (category: string, limit: number) => {
+    setCategoryBudgets(prev =>
+      prev.map(budget =>
+        budget.category === category ? { ...budget, limit } : budget
+      )
+    );
+  };
+
+  const saveAllBudgetsToServer = async () => {
+    // Заглушка — сохранение на сервер не реализовано
+    toast.info('Сохранение лимитов на сервер не подключено');
+  };
 
   return (
     <div className="space-y-6">
-      {/* Блок информации о фильтрах — исправлен для тёмной темы */}
       <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-200 flex items-center justify-between flex-wrap gap-2">
         <span>📊 Показаны транзакции за {currentMonth} • Всего: {filteredTransactions.length} шт.</span>
         {hasActiveFilters && (
@@ -226,7 +426,6 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
         )}
       </div>
 
-      {/* Предупреждения о лимитах — исправлены для тёмной темы */}
       {overallLimit > 0 && isOverOverallLimit && (
         <div className="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4 rounded-xl">
           <div className="flex items-center gap-2">
@@ -260,31 +459,80 @@ export function Dashboard({ userName, currentMonth }: DashboardProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <BalanceCard balance={balance} income={income} expenses={expenses} />
-          {overallLimit > 0 && <BudgetProgress spent={expenses} remaining={Math.max(0, overallLimit - expenses)} limit={overallLimit} percentage={Math.min(100, overallPercentage)} />}
-          {activeCategoryBudgets.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-border">
-              <div className="flex items-center gap-2 mb-4"><PieChart className="w-5 h-5 text-primary" /><h3 className="font-semibold text-foreground">Лимиты по категориям</h3></div>
-              <div className="space-y-3">{activeCategoryBudgets.map(budget => <CategoryBudgetProgress key={budget.category} {...budget} />)}</div>
-            </div>
+
+          {overallLimit > 0 && (
+            <BudgetProgress
+              spent={expenses}
+              remaining={Math.max(0, overallLimit - expenses)}
+              limit={overallLimit}
+              percentage={Math.min(100, overallPercentage)}
+            />
           )}
+
           {showTip && <SmartTip onClose={() => setShowTip(false)} />}
+
           <ForecastPanel transactions={filteredTransactions} balance={balance} />
+
           <ExpenseChart transactions={filteredTransactions.filter(t => t.type === 'expense')} />
         </div>
+
         <div className="space-y-6">
-          <button onClick={() => setShowBudgetSettings(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90">Настроить лимиты</button>
-          <div className="hidden lg:block"><TransactionForm onAdd={addTransaction} categories={customCategories} onAddCategory={handleAddCategory} onEditCategory={handleEditCategory} onDeleteCategory={handleDeleteCategory} /></div>
-          <TransactionFilters onFilterChange={setFilters} categories={customCategories.map(c => c.name)} isMobile={false} currentFilters={filters} />
+          <button onClick={() => setShowBudgetSettings(true)} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:opacity-90">
+            <Settings className="w-4 h-4" /> Настроить лимиты
+          </button>
+          <div className="hidden lg:block">
+            <TransactionForm 
+              onAdd={addTransaction} 
+              categories={allCategoriesForForm}
+              onAddCategory={handleAddCategory} 
+              onEditCategory={handleEditCategory} 
+              onDeleteCategory={handleDeleteCategory} 
+            />
+          </div>
+          <TransactionFilters 
+            onFilterChange={setFilters} 
+            categories={allCategoriesForForm.map(c => c.name)} 
+            isMobile={false} 
+            currentFilters={filters} 
+          />
         </div>
       </div>
+
       <TransactionList transactions={filteredTransactions} onDelete={deleteTransaction} />
-      <BudgetSettingsModal isOpen={showBudgetSettings} onClose={() => setShowBudgetSettings(false)} overallLimit={overallLimit} onUpdateOverallLimit={updateOverallLimit} categoryBudgets={categoryBudgets} onUpdateCategoryBudget={updateCategoryBudget} />
-      <button onClick={() => setShowTransactionForm(true)} className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center z-50"><Plus className="w-6 h-6" /></button>
+
+      <BudgetSettingsModal 
+        isOpen={showBudgetSettings} 
+        onClose={() => setShowBudgetSettings(false)} 
+        overallLimit={overallLimit} 
+        onUpdateOverallLimit={updateOverallLimit} 
+        categoryBudgets={categoryBudgets} 
+        onUpdateCategoryBudget={updateCategoryBudget} 
+        onSaveAll={saveAllBudgetsToServer}
+      />
+
+      <button 
+        onClick={() => setShowTransactionForm(true)} 
+        className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center z-50"
+      >
+        <Plus className="w-6 h-6" />
+      </button>
+
       {showTransactionForm && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => setShowTransactionForm(false)}>
           <div className="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-h-[90vh] overflow-y-auto animate-slide-up" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-border p-4 flex items-center justify-between"><h3 className="text-lg font-medium text-foreground">Добавить транзакцию</h3><button onClick={() => setShowTransactionForm(false)} className="p-2 hover:bg-muted rounded-lg"><X className="w-5 h-5" /></button></div>
-            <div className="p-4"><TransactionForm onAdd={addTransaction} categories={customCategories} onAddCategory={handleAddCategory} onEditCategory={handleEditCategory} onDeleteCategory={handleDeleteCategory} /></div>
+            <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-border p-4 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-foreground">Добавить транзакцию</h3>
+              <button onClick={() => setShowTransactionForm(false)} className="p-2 hover:bg-muted rounded-lg"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="p-4">
+              <TransactionForm 
+                onAdd={addTransaction} 
+                categories={allCategoriesForForm}
+                onAddCategory={handleAddCategory} 
+                onEditCategory={handleEditCategory} 
+                onDeleteCategory={handleDeleteCategory} 
+              />
+            </div>
           </div>
         </div>
       )}

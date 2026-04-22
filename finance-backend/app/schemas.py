@@ -76,3 +76,17 @@ class CategoryExpense(BaseModel):
     category: str
     icon: str
     amount: float
+
+class CategoryOut(BaseModel):
+    id: int
+    name: str
+    icon: str
+    is_default: bool
+    user_id: int
+    class Config:
+        from_attributes = True
+
+class CategoryCreate(BaseModel):
+    name: str
+    icon: str
+    is_default: Optional[bool] = False

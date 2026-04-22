@@ -1,27 +1,27 @@
-import { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { AuthPage } from './components/AuthPage';
 import { MainApp } from './components/MainApp';
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState('');
+  const { isAuthenticated, isLoading, user, logout } = useAuth();
 
-  const handleLogin = (name: string) => {
-    setUserName(name);
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserName('');
-  };
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4">Загрузка...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="size-full">
-      {isAuthenticated ? (
-        <MainApp userName={userName} onLogout={handleLogout} />
+      {isAuthenticated && user ? (
+        <MainApp userName={user.full_name || user.email} onLogout={logout} />
       ) : (
-        <AuthPage onLogin={handleLogin} />
+        <AuthPage />
       )}
     </div>
   );
