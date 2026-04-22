@@ -183,24 +183,50 @@ export function AboutPage() {
           <p className="text-muted-foreground">Сделано с любовью для студентов</p>
         </div>
 
-        <div className="flex items-center justify-center gap-4 flex-wrap">
-          <a
-            href="https://github.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-          >
-            <Github className="w-4 h-4" />
-            <span className="text-sm">GitHub</span>
-          </a>
-          <a
-            href="mailto:support@myfinances.app"
-            className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-          >
-            <Mail className="w-4 h-4" />
-            <span className="text-sm">Поддержка</span>
-          </a>
-        </div>
+<div className="flex items-center justify-center gap-4 flex-wrap">
+  {/* GitHub ссылка */}
+  <a
+    href="https://github.com/W0LIF/psuti_olimp"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+  >
+    <Github className="w-4 h-4" />
+    <span className="text-sm">GitHub</span>
+  </a>
+
+  {/* Поддержка с выпадающим меню */}
+  <div className="relative group">
+    <button className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+      <Mail className="w-4 h-4" />
+      <span className="text-sm">Поддержка</span>
+    </button>
+    <div className="absolute bottom-full mb-2 hidden group-hover:block bg-white dark:bg-gray-800 shadow-lg rounded-lg p-2 min-w-[200px] z-10 border border-gray-200 dark:border-gray-700">
+      <a 
+        href="https://mail.google.com/mail/?view=cm&fs=1&to=gerasimovaanna258@gmail.com&su=Вопрос%20о%20финансовом%20дашборде&body=Здравствуйте!%20У%20меня%20есть%20вопрос..." 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+      >
+        📧 Gmail
+      </a>
+      <a 
+        href="https://mail.yandex.ru/compose?to=gerasimovaanna258@gmail.com&subject=Вопрос%20о%20финансовом%20дашборде&body=Здравствуйте!%20У%20меня%20есть%20вопрос..." 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+      >
+        📧 Яндекс Почта
+      </a>
+      <a 
+        href="mailto:gerasimovaanna258@gmail.com?subject=Вопрос%20о%20финансовом%20дашборде&body=Здравствуйте!%20У%20меня%20есть%20вопрос..."
+        className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+      >
+        📧 Почта (приложение)
+      </a>
+    </div>
+  </div>
+</div>
 
         <p className="text-xs text-muted-foreground mt-6">
           © 2026 Мои финансы. Все права защищены.
