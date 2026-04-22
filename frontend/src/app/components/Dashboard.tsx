@@ -9,8 +9,6 @@ import { TransactionForm, Category } from './TransactionForm';
 import { TransactionList } from './TransactionList';
 import { ForecastPanel } from './ForecastPanel';
 import { TransactionFilters, Filters } from './TransactionFilters';
-import { ThemeToggle } from './ThemeToggle';
-import { Navigation } from './Navigation';
 import { useAsync } from '../../hooks/useAsync';
 import { transactionService, Transaction as ApiTransaction } from '../../services/transactions';
 import { categoryService, Category as ApiCategory } from '../../services/categories';
@@ -31,26 +29,33 @@ export interface CategoryBudget {
   spent: number;
 }
 
-interface DashboardProps {
-  userName: string;
-  onLogout: () => void;
-}
+const getMonthIndex = (monthName: string): number => {
+  const months: { [key: string]: number } = {
+    'Январь': 0, 'Февраль': 1, 'Март': 2, 'Апрель': 3,
+    'Май': 4, 'Июнь': 5, 'Июль': 6, 'Август': 7,
+    'Сентябрь': 8, 'Октябрь': 9, 'Ноябрь': 10, 'Декабрь': 11
+  };
+  return months[monthName] || new Date().getMonth();
+};
+
+const parseDate = (dateStr: string): Date => {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const filterTransactionsByMonth = (transactions: Transaction[], month: number, year: number): Transaction[] => {
+  if (!transactions || !Array.isArray(transactions)) return [];
+  return transactions.filter(transaction => {
+    const date = parseDate(transaction.date);
+    return date.getMonth() === month - 1 && date.getFullYear() === year;
+  });
+};
 
 const ALL_CATEGORIES = [
   'Еда', 'Транспорт', 'Кофе', 'Развлечения', 'Учёба',
   'Кафе и рестораны', 'Покупки', 'Здоровье', 'Дом',
   'Связь', 'Образование', 'Прочее'
 ];
-
-const MONTH_NAMES = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'
-];
-
-const parseDate = (dateStr: string): Date => {
-  const [year, month, day] = dateStr.split('-').map(Number);
-  return new Date(year, month - 1, day);
-};
 
 function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLimit, categoryBudgets, onUpdateCategoryBudget, onSaveAll }: any) {
   const [tempOverallLimit, setTempOverallLimit] = useState(overallLimit.toString());
@@ -148,16 +153,15 @@ function CategoryBudgetProgress({ category, limit, spent }: CategoryBudget) {
   );
 }
 
-export function Dashboard({ userName, onLogout }: DashboardProps) {
+export function Dashboard() {
   const [showTip, setShowTip] = useState(true);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [showBudgetSettings, setShowBudgetSettings] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Локальное состояние для выбранного месяца и года
   const now = new Date();
-  const [localMonth, setLocalMonth] = useState(now.getMonth() + 1);
-  const [localYear, setLocalYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   const [filters, setFilters] = useState<Filters>({
     dateRange: 'all',
@@ -167,23 +171,18 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
     type: 'all',
   });
 
-  // Загрузка транзакций
-  const { data: apiTransactions, isLoading: txLoading, error: txError, execute: refetchTransactions } = useAsync<ApiTransaction[]>(
-    () => transactionService.getMonthlyTransactions(localMonth, localYear),
-    [localMonth, localYear, refreshTrigger]
+  const { data: apiTransactions, isLoading: txLoading, error: txError } = useAsync<ApiTransaction[]>(
+    () => transactionService.getMonthlyTransactions(selectedMonth, selectedYear),
+    [selectedMonth, selectedYear, refreshTrigger]
   );
 
-  // Загрузка категорий
-  const { data: apiCategories, isLoading: catLoading, error: catError, execute: refetchCategories } = useAsync<ApiCategory[]>(
+  const { data: apiCategories, isLoading: catLoading, error: catError } = useAsync<ApiCategory[]>(
     () => categoryService.getCategories(),
     [refreshTrigger]
   );
 
-  const refreshAllData = () => {
-    setRefreshTrigger(prev => prev + 1);
-  };
+  const refreshAllData = () => setRefreshTrigger(prev => prev + 1);
 
-  // Маппинг транзакций
   const transactions: Transaction[] = useMemo(() => {
     if (!apiTransactions || !apiCategories) return [];
     return apiTransactions.map(tx => {
@@ -199,7 +198,6 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
     });
   }, [apiTransactions, apiCategories]);
 
-  // Категории для формы
   const allCategoriesForForm: Category[] = useMemo(() => {
     if (!apiCategories) return [];
     return apiCategories.map(cat => ({
@@ -211,22 +209,20 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
     }));
   }, [apiCategories]);
 
-  // Локальные лимиты (для UI)
   const [overallLimit, setOverallLimit] = useState(50000);
-  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>(() => {
-    return ALL_CATEGORIES.map(category => ({
-      category,
-      limit: 0,
-      spent: 0
-    }));
-  });
+  const [categoryBudgets, setCategoryBudgets] = useState<CategoryBudget[]>(() => 
+    ALL_CATEGORIES.map(category => ({ category, limit: 0, spent: 0 }))
+  );
 
-  // Фильтрация транзакций по выбранному месяцу (уже загружены за нужный месяц)
+  const monthFilteredTransactions = useMemo(() => 
+    filterTransactionsByMonth(transactions, selectedMonth, selectedYear),
+    [transactions, selectedMonth, selectedYear]
+  );
+
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(transaction => {
+    return monthFilteredTransactions.filter(transaction => {
       if (filters.type !== 'all' && transaction.type !== filters.type) return false;
       if (filters.category && transaction.category !== filters.category) return false;
-
       if (filters.dateRange !== 'all') {
         const today = new Date(); today.setHours(0,0,0,0);
         const txDate = parseDate(transaction.date);
@@ -260,9 +256,8 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       }
       return true;
     });
-  }, [transactions, filters]);
+  }, [monthFilteredTransactions, filters]);
 
-  // Обновление spent для категорий
   useEffect(() => {
     const expensesByCategory = filteredTransactions.filter(t => t.type === 'expense').reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
@@ -283,20 +278,15 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
     [filteredTransactions]
   );
   const balance = income - expenses;
-
   const overallPercentage = overallLimit > 0 ? (expenses / overallLimit) * 100 : 0;
   const isOverOverallLimit = expenses >= overallLimit && overallLimit > 0;
   const isNearOverallLimit = overallPercentage >= 80 && overallPercentage < 100 && overallLimit > 0;
   const hasActiveFilters = filters.dateRange !== 'all' || filters.category !== null || filters.type !== 'all';
 
-  // CRUD операции
   const addTransaction = async (transaction: Omit<Transaction, 'id'>) => {
     try {
       const category = apiCategories?.find(cat => cat.name === transaction.category);
-      if (!category) {
-        toast.error('Категория не найдена');
-        return;
-      }
+      if (!category) { toast.error('Категория не найдена'); return; }
       await transactionService.createTransaction({
         amount: transaction.amount,
         type: transaction.type,
@@ -307,9 +297,7 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       toast.success('Транзакция добавлена');
       setShowTransactionForm(false);
       refreshAllData();
-    } catch (error) {
-      toast.error('Ошибка при добавлении транзакции');
-    }
+    } catch (error) { toast.error('Ошибка при добавлении транзакции'); }
   };
 
   const deleteTransaction = async (id: string) => {
@@ -317,9 +305,7 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       await transactionService.deleteTransaction(parseInt(id));
       toast.success('Транзакция удалена');
       refreshAllData();
-    } catch (error) {
-      toast.error('Ошибка при удалении транзакции');
-    }
+    } catch (error) { toast.error('Ошибка при удалении транзакции'); }
   };
 
   const handleAddCategory = async (category: Omit<Category, 'id'>) => {
@@ -331,9 +317,7 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       });
       toast.success('Категория добавлена');
       refreshAllData();
-    } catch (error) {
-      toast.error('Ошибка при добавлении категории');
-    }
+    } catch (error) { toast.error('Ошибка при добавлении категории'); }
   };
 
   const handleEditCategory = async (id: string, name: string) => {
@@ -341,9 +325,7 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       await categoryService.updateCategory(parseInt(id), { name });
       toast.success('Категория обновлена');
       refreshAllData();
-    } catch (error) {
-      toast.error('Ошибка при обновлении категории');
-    }
+    } catch (error) { toast.error('Ошибка при обновлении категории'); }
   };
 
   const handleDeleteCategory = async (id: string) => {
@@ -351,115 +333,63 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       await categoryService.deleteCategory(parseInt(id));
       toast.success('Категория удалена');
       refreshAllData();
-    } catch (error) {
-      toast.error('Ошибка при удалении категории');
-    }
+    } catch (error) { toast.error('Ошибка при удалении категории'); }
   };
 
   const updateOverallLimit = (newLimit: number) => setOverallLimit(newLimit);
   const updateCategoryBudget = (category: string, limit: number) => {
-    setCategoryBudgets(prev =>
-      prev.map(budget =>
-        budget.category === category ? { ...budget, limit } : budget
-      )
-    );
+    setCategoryBudgets(prev => prev.map(budget =>
+      budget.category === category ? { ...budget, limit } : budget
+    ));
   };
-  const saveAllBudgetsToServer = async () => {
-    toast.info('Сохранение лимитов на сервер не подключено');
-  };
+  const saveAllBudgetsToServer = () => toast.info('Сохранение лимитов на сервер не подключено');
 
-  // Обработчики смены месяца/года
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalMonth(parseInt(e.target.value));
-  };
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setLocalYear(parseInt(e.target.value));
-  };
-
-  const displayedMonth = `${MONTH_NAMES[localMonth - 1]} ${localYear}`;
+  const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
   if (txLoading || catLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Загрузка данных...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex justify-center py-12"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
   }
 
   if (txError || catError) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="text-red-500 mb-4">Ошибка загрузки данных</div>
-          <button
-            onClick={refreshAllData}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:opacity-90"
-          >
-            Попробовать снова
-          </button>
-        </div>
+      <div className="text-center py-12">
+        <div className="text-red-500 mb-4">Ошибка загрузки данных</div>
+        <button onClick={refreshAllData} className="px-4 py-2 bg-primary text-white rounded-lg">Повторить</button>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Верхняя строка: приветствие + кнопка выхода + тема + выбор месяца */}
+      {/* Панель выбора месяца */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Привет, {userName}</h1>
-          <p className="text-sm text-muted-foreground">Управление финансами</p>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">📊 Период:</span>
+          <select value={selectedMonth} onChange={(e) => setSelectedMonth(parseInt(e.target.value))} className="bg-white dark:bg-gray-800 border border-border rounded-lg px-3 py-1.5 text-sm">
+            {monthNames.map((m, idx) => <option key={m} value={idx+1}>{m}</option>)}
+          </select>
+          <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className="bg-white dark:bg-gray-800 border border-border rounded-lg px-3 py-1.5 text-sm">
+            {[selectedYear-1, selectedYear, selectedYear+1].map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
         </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <ThemeToggle />
-          <select
-            value={localMonth}
-            onChange={handleMonthChange}
-            className="bg-white dark:bg-gray-800 border border-border rounded-lg px-2 py-1 text-sm"
-          >
-            {MONTH_NAMES.map((m, idx) => (
-              <option key={m} value={idx + 1}>{m}</option>
-            ))}
-          </select>
-          <select
-            value={localYear}
-            onChange={handleYearChange}
-            className="bg-white dark:bg-gray-800 border border-border rounded-lg px-2 py-1 text-sm"
-          >
-            {[localYear - 1, localYear, localYear + 1].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <button onClick={onLogout} className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90">
-            Выйти
-          </button>
+        <div className="text-sm text-muted-foreground">
+          Всего транзакций: {filteredTransactions.length}
+          {hasActiveFilters && (
+            <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="ml-2 text-xs text-blue-600 underline">
+              Сбросить фильтры
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Навигационное меню */}
-      <Navigation />
-
-      {/* Информационная строка (только количество транзакций и сброс фильтров) */}
-      <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-200 flex items-center justify-between flex-wrap gap-2">
-        <span>📊 Показаны транзакции за {displayedMonth} • Всего: {filteredTransactions.length} шт.</span>
-        {hasActiveFilters && (
-          <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="text-xs text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 underline">
-            Сбросить фильтры
-          </button>
-        )}
-      </div>
-
-      {/* Предупреждения о превышении бюджета */}
+      {/* Предупреждения о бюджете */}
       {overallLimit > 0 && isOverOverallLimit && (
         <div className="bg-red-50 dark:bg-red-950/40 border-l-4 border-red-500 p-4 rounded-xl">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+            <AlertCircle className="w-5 h-5 text-red-600" />
             <div>
-              <p className="font-semibold text-red-800 dark:text-red-200">⚠️ Превышение общего бюджета!</p>
-              <p className="text-sm text-red-700 dark:text-red-300">Вы превысили лимит на {Math.abs(overallLimit - expenses).toLocaleString()} ₽</p>
+              <p className="font-semibold text-red-800">⚠️ Превышение общего бюджета!</p>
+              <p className="text-sm text-red-700">Превышение на {Math.abs(overallLimit - expenses).toLocaleString()} ₽</p>
             </div>
           </div>
         </div>
@@ -467,19 +397,21 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
       {overallLimit > 0 && isNearOverallLimit && !isOverOverallLimit && (
         <div className="bg-yellow-50 dark:bg-yellow-950/40 border-l-4 border-yellow-500 p-4 rounded-xl">
           <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            <AlertCircle className="w-5 h-5 text-yellow-600" />
             <div>
-              <p className="font-semibold text-yellow-800 dark:text-yellow-200">⚠️ Внимание! Бюджет почти исчерпан</p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">Потрачено {Math.round(overallPercentage)}% от лимита. Осталось: {(overallLimit - expenses).toLocaleString()} ₽</p>
+              <p className="font-semibold text-yellow-800">⚠️ Бюджет почти исчерпан</p>
+              <p className="text-sm text-yellow-700">Потрачено {Math.round(overallPercentage)}% от лимита</p>
             </div>
           </div>
         </div>
       )}
 
       {filteredTransactions.length === 0 && hasActiveFilters && (
-        <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 text-center">
-          <p className="text-yellow-800 dark:text-yellow-200">По выбранным фильтрам транзакций не найдено</p>
-          <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="mt-2 text-sm text-yellow-600 dark:text-yellow-300 underline">Сбросить фильтры</button>
+        <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 rounded-xl p-4 text-center">
+          <p className="text-yellow-800">По выбранным фильтрам транзакций не найдено</p>
+          <button onClick={() => setFilters({ dateRange: 'all', startDate: null, endDate: null, category: null, type: 'all' })} className="mt-2 text-sm text-yellow-600 underline">
+            Сбросить фильтры
+          </button>
         </div>
       )}
 
@@ -487,12 +419,7 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
         <div className="lg:col-span-2 space-y-6">
           <BalanceCard balance={balance} income={income} expenses={expenses} />
           {overallLimit > 0 && (
-            <BudgetProgress
-              spent={expenses}
-              remaining={Math.max(0, overallLimit - expenses)}
-              limit={overallLimit}
-              percentage={Math.min(100, overallPercentage)}
-            />
+            <BudgetProgress spent={expenses} remaining={Math.max(0, overallLimit - expenses)} limit={overallLimit} percentage={Math.min(100, overallPercentage)} />
           )}
           {showTip && <SmartTip onClose={() => setShowTip(false)} />}
           <ForecastPanel transactions={filteredTransactions} balance={balance} />
@@ -504,57 +431,29 @@ export function Dashboard({ userName, onLogout }: DashboardProps) {
             <Settings className="w-4 h-4" /> Настроить лимиты
           </button>
           <div className="hidden lg:block">
-            <TransactionForm 
-              onAdd={addTransaction} 
-              categories={allCategoriesForForm}
-              onAddCategory={handleAddCategory} 
-              onEditCategory={handleEditCategory} 
-              onDeleteCategory={handleDeleteCategory} 
-            />
+            <TransactionForm onAdd={addTransaction} categories={allCategoriesForForm} onAddCategory={handleAddCategory} onEditCategory={handleEditCategory} onDeleteCategory={handleDeleteCategory} />
           </div>
-          <TransactionFilters 
-            onFilterChange={setFilters} 
-            categories={allCategoriesForForm.map(c => c.name)} 
-            isMobile={false} 
-            currentFilters={filters} 
-          />
+          <TransactionFilters onFilterChange={setFilters} categories={allCategoriesForForm.map(c => c.name)} isMobile={false} currentFilters={filters} />
         </div>
       </div>
 
       <TransactionList transactions={filteredTransactions} onDelete={deleteTransaction} />
 
-      <BudgetSettingsModal 
-        isOpen={showBudgetSettings} 
-        onClose={() => setShowBudgetSettings(false)} 
-        overallLimit={overallLimit} 
-        onUpdateOverallLimit={updateOverallLimit} 
-        categoryBudgets={categoryBudgets} 
-        onUpdateCategoryBudget={updateCategoryBudget} 
-        onSaveAll={saveAllBudgetsToServer}
-      />
+      <BudgetSettingsModal isOpen={showBudgetSettings} onClose={() => setShowBudgetSettings(false)} overallLimit={overallLimit} onUpdateOverallLimit={updateOverallLimit} categoryBudgets={categoryBudgets} onUpdateCategoryBudget={updateCategoryBudget} onSaveAll={saveAllBudgetsToServer} />
 
-      <button 
-        onClick={() => setShowTransactionForm(true)} 
-        className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center z-50"
-      >
+      <button onClick={() => setShowTransactionForm(true)} className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform flex items-center justify-center z-50">
         <Plus className="w-6 h-6" />
       </button>
 
       {showTransactionForm && (
         <div className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end" onClick={() => setShowTransactionForm(false)}>
-          <div className="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-h-[90vh] overflow-y-auto animate-slide-up" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-gray-800 rounded-t-3xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-border p-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-foreground">Добавить транзакцию</h3>
+              <h3 className="text-lg font-medium">Добавить транзакцию</h3>
               <button onClick={() => setShowTransactionForm(false)} className="p-2 hover:bg-muted rounded-lg"><X className="w-5 h-5" /></button>
             </div>
             <div className="p-4">
-              <TransactionForm 
-                onAdd={addTransaction} 
-                categories={allCategoriesForForm}
-                onAddCategory={handleAddCategory} 
-                onEditCategory={handleEditCategory} 
-                onDeleteCategory={handleDeleteCategory} 
-              />
+              <TransactionForm onAdd={addTransaction} categories={allCategoriesForForm} onAddCategory={handleAddCategory} onEditCategory={handleEditCategory} onDeleteCategory={handleDeleteCategory} />
             </div>
           </div>
         </div>
