@@ -1,10 +1,18 @@
 #!/bin/bash
 set -e
 
-# Run migrations if DATABASE_URL is set and not running tests
+echo "Starting application..."
+
+# Run migrations if DATABASE_URL is set
 if [ -n "$DATABASE_URL" ]; then
     echo "Running database migrations..."
-    alembic upgrade head || echo "Migrations failed or already applied"
+    if alembic upgrade head; then
+        echo "Migrations completed successfully"
+    else
+        echo "Warning: Migrations failed, but continuing with app startup"
+    fi
+else
+    echo "No DATABASE_URL set, skipping migrations"
 fi
 
 # Start the application
