@@ -36,6 +36,15 @@ export function SharedDashboard() {
   const { id } = useParams<{ id: string }>();
   const userId = parseInt(id || '0');
 
+  if (isNaN(userId) || userId <= 0) {
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-500 mb-4">Неверный ID пользователя</div>
+        <p className="text-muted-foreground">Проверьте ссылку</p>
+      </div>
+    );
+  }
+
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
