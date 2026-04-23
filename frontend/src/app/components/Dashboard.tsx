@@ -52,9 +52,9 @@ const filterTransactionsByMonth = (transactions: Transaction[], month: number, y
 };
 
 const ALL_CATEGORIES = [
-  'Еда', 'Транспорт', 'Кофе', 'Развлечения', 'Учёба',
-  'Кафе и рестораны', 'Покупки', 'Здоровье', 'Дом',
-  'Связь', 'Образование', 'Прочее'
+  'Еда', 'Транспорт', 'Учёба',
+  'Развлечение', 'Кофе', 'Покупки', 'Дом',
+  'Стипендия', 'Прочее'
 ];
 
 function BudgetSettingsModal({ isOpen, onClose, overallLimit, onUpdateOverallLimit, categoryBudgets, onUpdateCategoryBudget, onSaveAll }: any) {
