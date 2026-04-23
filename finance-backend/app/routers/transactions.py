@@ -57,3 +57,38 @@ async def delete_transaction(tx_id: int, db: AsyncSession = Depends(get_db), use
     await db.execute(delete(Transaction).where(Transaction.id == tx_id, Transaction.user_id == user.id))
     await db.commit()
     return {"ok": True}
+
+@router.get("/public/{user_id}")
+async def get_public_transactions(
+    user_id: int,
+    month: int,
+    year: int,
+    db: AsyncSession = Depends(get_db)
+):
+    # Проверяем, что пользователь существует
+    user_check = await db.execute(select(User).where(User.id == user_id))
+    if not user_check.scalar_one_or_none():
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Получаем транзакции за месяц
+    start_date = date(year, month, 1)
+    end_date = date(year, month + 1, 1) if month < 12 else date(year + 1, 1, 1)
+    
+    result = await db.execute(
+        select(Transaction, Category.name.label('category_name'))
+        .join(Category, Transaction.category_id == Category.id)
+        .where(Transaction.user_id == user_id, Transaction.date >= start_date, Transaction.date < end_date)
+    )
+    
+    transactions = []
+    for tx, cat_name in result:
+        transactions.append({
+            "id": tx.id,
+            "amount": tx.amount,
+            "type": tx.type,
+            "date": tx.date.isoformat(),
+            "comment": tx.comment,
+            "category": cat_name
+        })
+    
+    return transactions

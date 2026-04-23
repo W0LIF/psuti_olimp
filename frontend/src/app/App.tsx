@@ -1,5 +1,7 @@
 // frontend/src/App.tsx
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from '../context/AuthContext';
+import { CurrencyProvider } from '../app/components/CurrencyContext';
 import { useAuth } from '../context/AuthContext';
 import { AuthPage } from '../app/components/AuthPage';
 import { Dashboard } from '../app/components/Dashboard';
@@ -8,6 +10,7 @@ import { SettingsPage } from '../app/components/SettingsPage';
 import { AboutPage } from '../app/components/AboutPage';
 import { ImportCSV } from '../app/components/ImportCSV';
 import { SharedBudget } from '../app/components/SharedBudget';
+import { SharedDashboard } from '../app/components/SharedDashboard';
 import { Navigation } from '../app/components/Navigation';
 import { ThemeToggle } from '../app/components/ThemeToggle';
 
@@ -76,8 +79,15 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Router>
-      <AppContent />
-    </Router>
+    <AuthProvider>
+      <CurrencyProvider>
+        <Router>
+          <Routes>
+            <Route path="/shared/:id" element={<SharedDashboard />} />
+            <Route path="/*" element={<AppContent />} />
+          </Routes>
+        </Router>
+      </CurrencyProvider>
+    </AuthProvider>
   );
 }

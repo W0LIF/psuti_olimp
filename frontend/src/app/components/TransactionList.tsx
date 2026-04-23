@@ -5,31 +5,34 @@ import { useCurrency } from './CurrencyContext';
 interface TransactionListProps {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  readOnly?: boolean;
 }
 
 const CATEGORY_ICONS: Record<string, any> = {
   'Еда': Coffee,
   'Транспорт': Bus,
   'Учёба': BookOpen,
-  'Развлечения': Film,
+  'Развлечение': Film,
   'Кофе': Coffee,
   'Покупки': ShoppingBag,
   'Дом': Home,
   'Стипендия': Wallet,
+  'Прочее': Wallet,
 };
 
 const CATEGORY_COLORS: Record<string, string> = {
   'Еда': 'bg-orange-100 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400',
   'Транспорт': 'bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400',
   'Учёба': 'bg-purple-100 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400',
-  'Развлечения': 'bg-pink-100 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400',
+  'Развлечение': 'bg-pink-100 dark:bg-pink-950/50 text-pink-600 dark:text-pink-400',
   'Кофе': 'bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400',
   'Покупки': 'bg-green-100 dark:bg-green-950/50 text-green-600 dark:text-green-400',
   'Дом': 'bg-cyan-100 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400',
   'Стипендия': 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400',
+  'Прочее': 'bg-gray-100 dark:bg-gray-950/50 text-gray-600 dark:text-gray-400',
 };
 
-export function TransactionList({ transactions, onDelete }: TransactionListProps) {
+export function TransactionList({ transactions, onDelete, readOnly = false }: TransactionListProps) {
   const { format } = useCurrency();
 
   const formatDate = (dateString: string) => {
@@ -80,13 +83,15 @@ export function TransactionList({ transactions, onDelete }: TransactionListProps
                     {format(transaction.amount)}
                   </p>
 
-                  <button
-                    onClick={() => onDelete(transaction.id)}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-950/50 rounded transition-all"
-                    title="Удалить"
-                  >
-                    <X className="w-4 h-4 text-red-600 dark:text-red-400" />
-                  </button>
+                  {!readOnly && (
+                    <button
+                      onClick={() => onDelete(transaction.id)}
+                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 dark:hover:bg-red-950/50 rounded transition-all"
+                      title="Удалить"
+                    >
+                      <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

@@ -42,4 +42,9 @@ export const transactionService = {
     const endDate = new Date(year, month, 0).toISOString().split('T')[0];
     return this.getTransactions({ start_date: startDate, end_date: endDate });
   },
+
+  async getPublicTransactions(userId: number, month: number, year: number): Promise<any[]> {
+    const response = await api.get(`/transactions/public/${userId}?month=${month}&year=${year}`);
+    return response.data;
+  },
 };

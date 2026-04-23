@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Share2, Copy, Users, CheckCircle, Send, MessageSquare } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export function SharedBudget() {
-  const [shareLink] = useState('https://myfinances.app/shared/abc123xyz');
+  const { user } = useAuth();
+  const [shareLink] = useState(`https://frontend-olimp.onrender.com/shared/${user?.id}`);
   const [copied, setCopied] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
   const [botConnected, setBotConnected] = useState(false);
