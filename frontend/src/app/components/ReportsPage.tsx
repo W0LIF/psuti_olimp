@@ -32,7 +32,8 @@ export function ReportsPage() {
   const [selectedYear, setSelectedYear] = useState(getCurrentYear());
 
   // Загружаем все категории один раз
-  const { data: categories = [] } = useAsync(categoryService.getCategories, []);
+  const { data: categoriesData } = useAsync(categoryService.getCategories, []);
+  const categories = categoriesData || [];
 
   // Загружаем транзакции за выбранный месяц
   const { data: apiTransactions, loading, error, execute } = useAsync(
