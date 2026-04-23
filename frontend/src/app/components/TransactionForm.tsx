@@ -32,11 +32,12 @@ const DEFAULT_CATEGORIES = [
   { id: 'Еда', name: 'Еда', icon: Coffee, color: '#f97316' },
   { id: 'Транспорт', name: 'Транспорт', icon: Bus, color: '#3b82f6' },
   { id: 'Учёба', name: 'Учёба', icon: BookOpen, color: '#a855f7' },
-  { id: 'Развлечения', name: 'Развлечения', icon: Film, color: '#ec4899' },
+  { id: 'Развлечение', name: 'Развлечение', icon: Film, color: '#ec4899' },
   { id: 'Кофе', name: 'Кофе', icon: Coffee, color: '#f59e0b' },
   { id: 'Покупки', name: 'Покупки', icon: ShoppingBag, color: '#10b981' },
   { id: 'Дом', name: 'Дом', icon: Home, color: '#06b6d4' },
   { id: 'Стипендия', name: 'Стипендия', icon: Wallet, color: '#22c55e' },
+  { id: 'Прочее', name: 'Прочее', icon: Wallet, color: '#6b7280' },
 ];
 
 const ICONS_LIST = [

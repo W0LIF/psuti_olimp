@@ -11,11 +11,12 @@ const COLORS: Record<string, string> = {
   'Еда': '#f97316',
   'Транспорт': '#3b82f6',
   'Учёба': '#a855f7',
-  'Развлечения': '#ec4899',
+  'Развлечение': '#ec4899',
   'Кофе': '#f59e0b',
   'Покупки': '#10b981',
   'Дом': '#06b6d4',
   'Стипендия': '#22c55e',
+  'Прочее': '#6b7280',
 };
 
 export function ExpenseChart({ transactions, categoryData }: ExpenseChartProps) {

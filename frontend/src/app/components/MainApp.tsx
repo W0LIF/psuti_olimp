@@ -34,20 +34,21 @@ interface DashboardProps {
 }
 
 const ALL_CATEGORIES = [
-  'Еда', 'Транспорт', 'Кофе', 'Развлечения', 'Учёба', 
-  'Кафе и рестораны', 'Покупки', 'Здоровье', 'Дом', 
-  'Связь', 'Образование', 'Прочее'
+  'Еда', 'Транспорт', 'Учёба',
+  'Развлечение', 'Кофе', 'Покупки', 'Дом',
+  'Стипендия', 'Прочее'
 ];
 
 const INITIAL_CATEGORIES: Category[] = [
-  { id: '1', name: 'Кофе', icon: 'Coffee', color: '#f59e0b', isCustom: false },
-  { id: '2', name: 'Еда', icon: 'Coffee', color: '#f97316', isCustom: false },
-  { id: '3', name: 'Транспорт', icon: 'Bus', color: '#3b82f6', isCustom: false },
-  { id: '4', name: 'Развлечения', icon: 'Film', color: '#ec4899', isCustom: false },
-  { id: '5', name: 'Покупки', icon: 'ShoppingBag', color: '#10b981', isCustom: false },
-  { id: '6', name: 'Дом', icon: 'Home', color: '#06b6d4', isCustom: false },
-  { id: '7', name: 'Учёба', icon: 'BookOpen', color: '#a855f7', isCustom: false },
+  { id: '1', name: 'Еда', icon: 'Coffee', color: '#f97316', isCustom: false },
+  { id: '2', name: 'Транспорт', icon: 'Bus', color: '#3b82f6', isCustom: false },
+  { id: '3', name: 'Учёба', icon: 'BookOpen', color: '#a855f7', isCustom: false },
+  { id: '4', name: 'Развлечение', icon: 'Film', color: '#ec4899', isCustom: false },
+  { id: '5', name: 'Кофе', icon: 'Coffee', color: '#f59e0b', isCustom: false },
+  { id: '6', name: 'Покупки', icon: 'ShoppingBag', color: '#10b981', isCustom: false },
+  { id: '7', name: 'Дом', icon: 'Home', color: '#06b6d4', isCustom: false },
   { id: '8', name: 'Стипендия', icon: 'Wallet', color: '#22c55e', isCustom: false },
+  { id: '9', name: 'Прочее', icon: 'Wallet', color: '#6b7280', isCustom: false },
 ];
 
 const getMonthIndex = (monthName: string): number => {
