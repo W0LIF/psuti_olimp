@@ -8,11 +8,33 @@ from app.database import get_db
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
+# Предустановленные категории (icon, name)
+DEFAULT_CATEGORIES = [
+    ("🍔", "Еда"), ("🚌", "Транспорт"), ("📚", "Учёба"), 
+    ("🎬", "Развлечение"), ("☕", "Кофе"), ("🛒", "Покупки"), 
+    ("🏠", "Дом"), ("💰", "Стипендия"), ("📦", "Прочее")
+]
+
 @router.get("/", response_model=list[CategoryOut])
 async def get_categories(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user)
 ):
+    # Проверить, есть ли дефолтные категории у пользователя
+    result = await db.execute(select(Category).where(Category.user_id == user.id, Category.is_default == 1))
+    existing_defaults = result.scalars().all()
+    existing_names = {cat.name for cat in existing_defaults}
+    
+    # Создать недостающие дефолтные категории
+    for icon, name in DEFAULT_CATEGORIES:
+        if name not in existing_names:
+            new_cat = Category(name=name, icon=icon, is_default=1, user_id=user.id)
+            db.add(new_cat)
+    
+    if db.new or db.dirty:  # Если добавили новые
+        await db.commit()
+    
+    # Вернуть все категории пользователя
     result = await db.execute(select(Category).where(Category.user_id == user.id))
     return result.scalars().all()
 
