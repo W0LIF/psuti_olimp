@@ -34,3 +34,87 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+@media (max-width: 480px) {
+  :root {
+    --font-size: 15px;
+    --radius: 0.5rem;
+  }
+
+  body {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  input,
+  button,
+  textarea,
+  select,
+  .btn,
+  .button,
+  [role="button"],
+  form > * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  input,
+  textarea,
+  select {
+    width: 100%;
+  }
+
+  button,
+  .btn,
+  .button {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .container,
+  .wrapper,
+  main,
+  article,
+  section {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  img,
+  svg,
+  video,
+  iframe,
+  .media {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .card,
+  .form-group,
+  .form-field {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 360px) {
+  :root {
+    --font-size: 14px;
+  }
+
+  body {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+@media (min-width: 600px) {
+  :root {
+    --font-size: 18px;
+  }
+}
